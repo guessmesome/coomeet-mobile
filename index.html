@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f7ff">
+  <meta name="description" content="A local, five-step CooMeet mobile design preview.">
+  <title>CooMeet · Meet someone new</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23f3f7ff'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23ed6588' stroke-width='5'/%3E%3Ccircle cx='25' cy='23' r='9' fill='none' stroke='%234ba5f5' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="phone" aria-label="CooMeet introduction">
+    <header class="header">
+      <button class="icon-button back" id="back" aria-label="Previous screen" hidden></button>
+      <a class="brand" href="#1" aria-label="CooMeet home"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span>Coo<span>Meet</span></span></a>
+      <span class="online-count" title="Illustrative online count for this local preview"><i class="online-dot"></i><span id="online">1.2K</span> online</span>
+      <button class="icon-button theme" id="theme" aria-label="Switch to dark theme"></button>
+    </header>
+    <nav class="progress" aria-label="Your progress" hidden></nav>
+    <section id="screen" class="screen" aria-live="polite"></section>
+    <footer id="footer" class="footer"></footer>
+  </main>
+  <dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-content"><button id="close-dialog" class="icon-button close-dialog" aria-label="Close"></button><div id="dialog-body"></div></div></dialog>
+  <div id="announcement" class="sr-only" role="status"></div>
+</body>
+</html>
