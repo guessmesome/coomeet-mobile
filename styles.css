@@ -206,30 +206,29 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #fff6 0%, #fff0 42%), linear-gradient(#0000, #0004);
+  background: radial-gradient(ellipse at 0% 100%, #ffff 0%, #ffffffcc 16%, #ffffff66 32%, #fff0 58%);
   z-index: -1;
 }
 .choice-label {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 800;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
   color: #17181d;
-  text-shadow: 0 1px 8px #fff, 0 0 12px #fff;
+  text-shadow: 0 1px 8px #fff6;
 }
-.choice-label svg { width: 22px; height: 22px; stroke-width: 2.4; filter: drop-shadow(0 1px 2px #fff); }
+.choice-label svg { width: 40px; height: 40px; stroke-width: 1.7; }
 .choice[data-preference="Women"] .choice-label svg { color: var(--pink); }
 .choice[data-preference="Men"] .choice-label svg { color: #3b82f6; }
 .choice[data-preference="Both"] .choice-label svg { color: var(--pink); }
 .radio {
   position: absolute;
   right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
+  top: 16px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid #fff;
   background: #fff6;
@@ -441,6 +440,11 @@ dialog::backdrop { background: #17234683; }
 }
 @media (max-width: 359px) {
   .footer-notes { height: 54px; }
+}
+@media (max-width: 599px) and (max-height: 650px) {
+  .bubbles { top: 20%; }
+  .bubble { padding: 8px 12px; font-size: .8rem; }
+  .hero-content h1 { font-size: 1.55rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *:before, *:after { animation: none !important; transition: none !important; }
