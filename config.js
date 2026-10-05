@@ -12,12 +12,13 @@ window.COOMEET_CONFIG = {
     hook: 'assets/videos/preview-0277.webp',
     karolina: 'assets/videos/preview-0274.webp',
     hanna: 'assets/videos/preview-0276.webp',
-    helen: 'assets/videos/preview-0277.webp'
+    helen: 'assets/videos/preview-0277.webp',
+    laura: 'assets/figma/laura.webp'
   },
   photos: {
-    karolina: 'assets/figma/karolina.webp',
-    hanna: 'assets/figma/hanna.webp',
-    helen: 'assets/figma/helen.webp',
-    laura: 'assets/figma/laura.webp'
+    karolina: 'assets/profiles/karolina.webp',
+    hanna: 'assets/profiles/hanna.webp',
+    helen: 'assets/profiles/helen.webp',
+    laura: 'assets/profiles/laura.webp'
   }
 };

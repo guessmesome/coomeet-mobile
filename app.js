@@ -22,7 +22,7 @@
     { id: 'karolina', name: 'Karolina', image: config.posters?.karolina || 'assets/karolina.webp' },
     { id: 'hanna', name: 'Hanna', image: config.posters?.hanna || 'assets/hanna.webp' },
     { id: 'helen', name: 'Helen', image: config.posters?.helen || 'assets/helen.webp' },
-    { id: 'laura', name: 'Laura', image: config.photos?.laura || 'assets/laura.webp' }
+    { id: 'laura', name: 'Laura', image: config.posters?.laura || 'assets/laura.webp' }
   ];
   const state = { step: 1, preference: 'Women', person: 'karolina', carousel: 2, email: '', muted: false };
   const phone = document.querySelector('.phone');
