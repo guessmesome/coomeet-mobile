@@ -1,6 +1,15 @@
-# Figma photo assets
+# Figma assets
 
 Source: [Coomeet-Onboarding](https://www.figma.com/design/7vp6C9qbX5Z2ObP79H02cT/Coomeet-Onboarding?node-id=0-1).
+
+`logo.svg` is the original 160 × 32 px vector logo exported from
+[node 0:435](https://www.figma.com/design/7vp6C9qbX5Z2ObP79H02cT/Coomeet-Onboarding?node-id=0-435)
+(`CooMeet_idEvuL7ZbF_1 1` on Onboarding 1). Paths, colours and proportions are
+unchanged; no fonts or external resources are required.
+
+`logo-mark.svg` uses the six original bird paths from the same export for the
+browser favicon. Their geometry and colours are unchanged; the viewBox is
+limited to the bird (38 × 32 px).
 
 These photos were downloaded from the source design's image fills. The source
 filenames below record the Figma image hashes for tracing each asset.
