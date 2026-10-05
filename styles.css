@@ -9,15 +9,17 @@
   --cyan: #4EC4F5;
   --soft: #f4f6ff;
   --shadow: 0 10px 28px #24386912;
-  --overlay: linear-gradient(180deg, #eef1ff00 28%, #eef1ffe8 72%, #eef1ff 100%);
+  --overlay: linear-gradient(180deg, #eef1ffe8 0%, #eef1ff66 10%, #eef1ff00 28%, #eef1ff00 48%, #eef1ffe8 82%, #eef1ff 100%);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Arial, sans-serif;
   font-size: 16px;
 }
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: #dfe6fb; color: var(--ink); }
 button, input, a { -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; }
 button, a { touch-action: manipulation; }
+button { -webkit-user-select: none; user-select: none; }
 button { cursor: pointer; border: 0; background: transparent; color: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
 button:disabled { cursor: default; }
@@ -34,6 +36,8 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   isolation: isolate;
   width: 100%;
   max-width: 390px;
+  height: 100svh;
+  height: 100dvh;
   min-height: 100svh;
   min-height: 100dvh;
   margin: auto;
@@ -92,10 +96,13 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 }
 .progress span.active { background: var(--pink); }
 
-.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; padding: 0 20px; }
+.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; padding: 0 20px; overflow-y: auto; }
+.screen > * { flex-shrink: 0; }
 .intro { margin-bottom: 16px; }
 .intro p { margin-top: 8px; color: var(--muted); font-size: .95rem; line-height: 1.4; text-align: center; }
 .footer { padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); z-index: 3; flex-shrink: 0; }
+.footer-notes { height: 26px; display: flex; flex-direction: column; }
+.footer-notes .trust { flex-shrink: 0; }
 
 .cta {
   display: flex;
@@ -113,7 +120,9 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   letter-spacing: -.02em;
 }
 .cta svg { width: 18px; height: 18px; stroke-width: 2.2; }
-.cta:hover { filter: brightness(1.04); }
+@media (hover: hover) and (pointer: fine) {
+  .cta:hover { filter: brightness(1.04); }
+}
 .cta:active { transform: scale(.985); }
 .cta:disabled, .cta.is-disabled {
   background: #ffd6e4;
@@ -136,9 +145,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 .step-note b { color: var(--ink); font-weight: 600; }
 
 .phone.hook .header { color: #17181d; background: transparent; }
-.phone.hook .screen { padding: 0; justify-content: flex-end; position: static; }
+.phone.hook .screen { padding: 0; justify-content: flex-end; position: static; overflow: visible; }
 .hero-media { position: absolute; z-index: 0; inset: 0 0 108px; overflow: hidden; }
-.hero-media video { object-position: 50% 18%; }
+.preview-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero-media .preview-media { object-position: 60% 18%; }
 .hero-media:after { content: ""; position: absolute; inset: 0; background: var(--overlay); }
 .hero-content { padding: 0 24px 8px; text-align: center; position: relative; z-index: 2; }
 .hero-content h1 { font-size: 1.85rem; line-height: 1.12; }
@@ -181,7 +191,8 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  height: 108px;
+  height: clamp(128px, 41.0256vw, 160px);
+  flex-shrink: 0;
   border-radius: 22px;
   display: flex;
   align-items: flex-end;
@@ -237,9 +248,9 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 .carousel-track { display: flex; gap: 12px; transition: transform .55s cubic-bezier(.22,.65,.25,1); will-change: transform; }
 .video-card {
   position: relative;
-  flex: 0 0 78%;
-  aspect-ratio: 3/3.7;
-  max-height: 390px;
+  flex: 0 0 82%;
+  min-width: 0;
+  aspect-ratio: 5/7;
   border-radius: 26px;
   overflow: hidden;
   transform: scale(.96);
@@ -248,7 +259,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 }
 .video-card.active { transform: scale(1); opacity: 1; }
 .video-card:after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, #141820cc, transparent 42%); pointer-events: none; }
-.video-card video { object-position: 50% 22%; }
+.video-card .preview-media { object-position: 50% 20%; }
 .live {
   position: absolute;
   top: 14px;
@@ -296,13 +307,14 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   text-align: left;
 }
 .type-photo {
+  display: block;
   position: relative;
   overflow: hidden;
   border-radius: 20px;
   aspect-ratio: 1/1.12;
   background: #dce3f0;
 }
-.type-photo img { object-position: 50% 22%; }
+.type-photo img { position: absolute; inset: 0; object-position: 50% 20%; }
 .type-name {
   display: block;
   margin-top: 8px;
@@ -319,11 +331,11 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   position: relative;
   border-radius: 24px;
   overflow: hidden;
-  aspect-ratio: 1.18;
+  aspect-ratio: 9/10;
   min-height: 210px;
   background: #dee4ef;
 }
-.call video { object-position: 50% 20%; }
+.call .preview-media { object-position: 50% 12%; }
 .call-bubble {
   position: absolute;
   left: 12px;
@@ -420,11 +432,15 @@ dialog::backdrop { background: #17234683; }
 @media (min-width: 600px) {
   body { min-height: 100vh; padding: 24px; display: flex; align-items: center; justify-content: center; }
   .phone {
+    height: 764px;
     min-height: 764px;
     max-height: none;
     border-radius: 32px;
     box-shadow: 0 30px 80px #1a2c4d28;
   }
+}
+@media (max-width: 359px) {
+  .footer-notes { height: 54px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *:before, *:after { animation: none !important; transition: none !important; }

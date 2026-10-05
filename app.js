@@ -19,12 +19,12 @@
   const svg = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.chat}</svg>`;
   const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const people = [
-    { id: 'karolina', name: 'Karolina', image: 'assets/karolina.webp' },
-    { id: 'hanna', name: 'Hanna', image: 'assets/hanna.webp' },
-    { id: 'helen', name: 'Helen', image: 'assets/helen.webp' },
-    { id: 'laura', name: 'Laura', image: 'assets/laura.webp' }
+    { id: 'karolina', name: 'Karolina', image: config.posters?.karolina || 'assets/karolina.webp' },
+    { id: 'hanna', name: 'Hanna', image: config.posters?.hanna || 'assets/hanna.webp' },
+    { id: 'helen', name: 'Helen', image: config.posters?.helen || 'assets/helen.webp' },
+    { id: 'laura', name: 'Laura', image: config.photos?.laura || 'assets/laura.webp' }
   ];
-  const state = { step: 1, preference: 'Women', person: 'karolina', carousel: 0, email: '', muted: false };
+  const state = { step: 1, preference: 'Women', person: 'karolina', carousel: 2, email: '', muted: false };
   const phone = document.querySelector('.phone');
   const screen = document.getElementById('screen');
   const footer = document.getElementById('footer');
@@ -34,8 +34,14 @@
   let carouselTimer = null;
   let resizeFrame;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const portrait = person => `<span class="type-photo"><img src="${person.image}" alt="${person.name}" draggable="false"><span class="ring"></span></span>`;
-  const media = (person, key = person.id) => `<video ${config.videos?.[key] ? `src="${escape(config.videos[key])}"` : ''} poster="${person.image}" autoplay muted loop playsinline preload="metadata" aria-label="${person.name} video preview"></video>`;
+  const portrait = person => `<span class="type-photo"><img src="${escape(config.photos?.[person.id] || person.image)}" alt="${person.name}" draggable="false"><span class="ring"></span></span>`;
+  const media = (person, key = person.id) => {
+    const poster = escape(config.posters?.[key] || person.image);
+    const label = escape(`${person.name} video preview`);
+    return config.videos?.[key]
+      ? `<video class="preview-media" data-src="${escape(config.videos[key])}" poster="${poster}" muted loop playsinline preload="none" aria-label="${label}"></video>`
+      : `<img class="preview-media" src="${poster}" alt="${escape(person.name)}" draggable="false">`;
+  };
   const intro = (title, subtitle = '') => `<div class="intro"><h1 tabindex="-1">${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ''}</div>`;
   const radio = '<span class="radio" aria-hidden="true"></span>';
   const arrow = svg('next');
@@ -51,26 +57,29 @@
     progress.hidden = state.step === 1;
     progress.innerHTML = [1,2,3,4].map(n => `<span class="${n < state.step ? 'active' : ''}"></span>`).join('');
     if (state.step === 1) {
-      screen.innerHTML = `<div class="hero-media">${media(people[1], 'hook')}</div><div class="bubbles" aria-label="Chat messages"><span class="bubble">Hey ;)</span><span class="bubble">Want to chat? 😘</span></div><div class="hero-content">${intro('Someone interesting might be<br><em>waiting for you</em>','See who’s online and where the conversation goes')}</div>`;
+      screen.innerHTML = `<div class="hero-media">${media(people[2], 'hook')}</div><div class="bubbles" aria-label="Chat messages"><span class="bubble">Hey ;)</span><span class="bubble">Want to chat? 😘</span></div><div class="hero-content">${intro('Someone interesting might be<br><em>waiting for you</em>','See who’s online and where the conversation goes')}</div>`;
     } else if (state.step === 2) {
-      screen.innerHTML = intro('Who do you want<br><em>to meet?</em>','Choose who you’d like to see in your roulette') + `<div class="options" role="radiogroup" aria-label="Who do you want to meet">${[['Women','women','assets/karolina.webp'],['Men','men','assets/man.webp'],['Both','both','assets/couple.webp']].map(([name,icon,image]) => `<button class="choice ${state.preference === name ? 'selected' : ''}" role="radio" aria-checked="${state.preference === name}" tabindex="${state.preference === name ? '0' : '-1'}" data-preference="${name}"><span class="choice-photo"><img src="${image}" alt="" draggable="false"></span><span class="ring"></span><span class="choice-label">${svg(icon)}${name}</span>${radio}</button>`).join('')}</div>`;
+      screen.innerHTML = intro('Who do you want<br><em>to meet?</em>','Choose who you’d like to see in your roulette') + `<div class="options" role="radiogroup" aria-label="Who do you want to meet">${[['Women','women','assets/figma/women.webp'],['Men','men','assets/figma/men.webp'],['Both','both','assets/figma/both.webp']].map(([name,icon,image]) => `<button class="choice ${state.preference === name ? 'selected' : ''}" role="radio" aria-checked="${state.preference === name}" tabindex="${state.preference === name ? '0' : '-1'}" data-preference="${name}"><span class="choice-photo"><img src="${image}" alt="" draggable="false"></span><span class="ring"></span><span class="choice-label">${svg(icon)}${name}</span>${radio}</button>`).join('')}</div>`;
     } else if (state.step === 3) {
       screen.innerHTML = intro('You never know<br><em>who’s next</em>','Every next chat is a surprise') + `<div class="carousel" role="region" aria-roledescription="carousel" aria-label="People to meet" tabindex="0"><div class="carousel-track">${people.slice(0,3).map((person,i) => `<article class="video-card ${state.carousel === i ? 'active' : ''}" aria-label="${person.name}, ${i+1} of 3">${media(person)}<span class="ring"></span><span class="live"><i></i>LIVE</span><span class="card-chat">${svg('chat')}</span><div class="card-person"><strong>${person.name}</strong><p><i class="online-dot"></i>Online now</p></div></article>`).join('')}</div></div>`;
     } else if (state.step === 4) {
       screen.innerHTML = intro('Which one is more<br><em>your type?</em>','Pick the one you’d want to meet') + `<div class="type-grid" role="radiogroup" aria-label="Choose your type">${people.map(person => `<button class="type ${state.person === person.id ? 'selected' : ''}" role="radio" aria-checked="${state.person === person.id}" tabindex="${state.person === person.id ? '0' : '-1'}" data-person="${person.id}">${portrait(person)}<span class="type-name">${person.name}</span></button>`).join('')}</div>`;
     } else {
       const person = people.find(p => p.id === state.person);
-      screen.innerHTML = intro('She & <em>126 similar girls</em><br>are online right now') + `<div class="call">${media(person)}<span class="ring"></span><span class="live"><i></i>LIVE</span><div class="call-bubble">Hii, I’m already waiting for you. Are you joining? 😘</div><div class="call-controls"><button class="call-control" id="camera" aria-label="Camera preview information">${svg('cameraOff')}</button><button class="call-control" id="microphone" aria-label="${state.muted ? 'Unmute preview' : 'Mute preview'}" aria-pressed="${state.muted}">${svg(state.muted ? 'micOff' : 'mic')}</button><button class="call-control" id="chat" aria-label="Open chat preview">${svg('chat')}</button></div><div class="camera-preview">${svg('cameraOff')}<p>Your camera<br>is off</p></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail" autocomplete="email" inputmode="email" maxlength="254" value="${escape(state.email)}" aria-describedby="email-error" required></div><p id="email-error" class="error" role="alert" hidden></p></form>`;
+      screen.innerHTML = intro('She & <em>126 similar girls</em><br>are online right now') + `<div class="call">${media(person)}<span class="ring"></span><span class="live"><i></i>LIVE</span><div class="call-bubble">Hii, I’m already waiting for you. Are you joining? 😘</div><div class="call-controls"><button class="call-control" id="camera" aria-label="Camera preview information">${svg('cameraOff')}</button><button class="call-control" id="microphone" aria-label="${state.muted ? 'Unmute preview' : 'Mute preview'}" aria-pressed="${state.muted}">${svg(state.muted ? 'micOff' : 'mic')}</button><button class="call-control" id="chat" aria-label="Open chat preview">${svg('chat')}</button></div><div class="camera-preview">${svg('cameraOff')}<p>Your camera<br>is off</p></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail" autocomplete="email" inputmode="email" maxlength="254" value="${escape(state.email)}" aria-describedby="email-error" required></div><p id="email-error" class="error" role="alert" hidden></p><p class="legal">By continuing, you agree to our <button type="button" id="terms">Terms</button> and <button type="button" id="privacy">Privacy Policy</button>.</p></form>`;
     }
     const ready = state.step !== 5 || validEmail(state.email);
-    footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${arrow}</button>${state.step === 1 || state.step === 5 ? trust(state.step === 5) : ''}${state.step === 5 ? '<p class="legal">By continuing, you agree to our <button id="terms">Terms</button> and <button id="privacy">Privacy Policy</button>.</p>' : ''}`;
+    footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${arrow}</button><div class="footer-notes"${state.step > 1 && state.step < 5 ? ' aria-hidden="true"' : ''}>${state.step === 1 || state.step === 5 ? trust(state.step === 5) : ''}</div>`;
     if (state.step !== 5) document.getElementById('next').addEventListener('click', () => go(state.step+1));
     bindScreen();
+    syncVideos();
+    screen.scrollTop = 0;
     if (focus) screen.querySelector('h1')?.focus({preventScroll:true});
   }
   function go(step) {
     if (!Number.isInteger(step) || step < 1 || step > 5) throw new Error('Screen must be between 1 and 5.');
     if (state.step === 5) state.email = document.getElementById('email')?.value || state.email;
+    if (step === 3) state.carousel = 2;
     state.step = step;
     if (location.hash !== `#${step}`) location.hash = String(step);
     render();
@@ -102,6 +111,18 @@
     clearInterval(carouselTimer);
     if (state.step === 3 && !document.hidden && !reducedMotion.matches) carouselTimer = setInterval(() => changeSlide(1),4000);
   }
+  function syncVideos() {
+    screen.querySelectorAll('video').forEach(video => {
+      const card = video.closest('.video-card');
+      const active = !document.hidden && (!card || card.classList.contains('active'));
+      if (active && video.dataset.src) {
+        if (!video.getAttribute('src')) video.src = video.dataset.src;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }
   function slideTo(index, announce = false) {
     state.carousel = ((index%3)+3)%3;
     const container = screen.querySelector('.carousel');
@@ -110,7 +131,8 @@
     const width = cards[0].getBoundingClientRect().width / (cards[0].classList.contains('active') ? 1 : .96);
     const left = (container.clientWidth-width)/2;
     container.querySelector('.carousel-track').style.transform = `translateX(${left-state.carousel*(width+12)}px)`;
-    cards.forEach((card,i) => {card.classList.toggle('active',i === state.carousel);card.setAttribute('aria-hidden',String(i !== state.carousel));const video = card.querySelector('video');if(i === state.carousel && video.getAttribute('src')) video.play().catch(()=>{}); else video.pause();});
+    cards.forEach((card,i) => {card.classList.toggle('active',i === state.carousel);card.setAttribute('aria-hidden',String(i !== state.carousel));});
+    syncVideos();
     if (announce) document.getElementById('announcement').textContent = `${people[state.carousel].name}, ${state.carousel+1} of 3`;
   }
   function changeSlide(delta, manual = false) {slideTo(state.carousel+delta,manual);if(manual)resetAuto();}
@@ -145,11 +167,25 @@
   function svgSymbol(icon) {return `<div class="dialog-symbol">${svg(icon)}</div>`;}
   function openDialog(content) {document.getElementById('dialog-body').innerHTML = content;dialog.showModal();}
   function bindScreen() {
+    screen.querySelectorAll('video').forEach(video => {
+      video.addEventListener('error', () => {
+        const poster = document.createElement('img');
+        poster.className = 'preview-media';
+        poster.src = video.poster;
+        poster.alt = video.getAttribute('aria-label');
+        poster.draggable = false;
+        video.replaceWith(poster);
+      }, { once: true });
+    });
     if (state.step === 2) bindRadio('preference');
     if (state.step === 4) bindRadio('person');
     if (state.step === 3) {
-      requestAnimationFrame(() => slideTo(state.carousel));
       const carousel = screen.querySelector('.carousel');
+      const track = carousel.querySelector('.carousel-track');
+      track.style.transition = 'none';
+      slideTo(state.carousel);
+      track.getBoundingClientRect();
+      track.style.removeProperty('transition');
       let startX = 0, startY = 0;
       carousel.addEventListener('pointerdown', event => {startX=event.clientX;startY=event.clientY;clearInterval(carouselTimer);carousel.setPointerCapture(event.pointerId);});
       carousel.addEventListener('pointerup', event => {const dx=event.clientX-startX,dy=event.clientY-startY;if(Math.abs(dx)>35 && Math.abs(dx)>Math.abs(dy))changeSlide(dx<0?1:-1,true);resetAuto();});
@@ -177,7 +213,7 @@
   dialog.addEventListener('click',event => {if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();}});
   window.addEventListener('hashchange',()=>{const step=Number(location.hash.slice(1));if(Number.isInteger(step)&&step>=1&&step<=5&&step!==state.step)go(step);});
   window.addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>slideTo(state.carousel));});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(carouselTimer);else resetAuto();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(carouselTimer);else resetAuto();syncVideos();});
   reducedMotion.addEventListener('change',resetAuto);
   let count=1200;
   setInterval(()=>{if(document.hidden||reducedMotion.matches)return;count=Math.max(1200,Math.min(1300,count+(Math.random()>.5?20:-10)));document.getElementById('online').textContent=`${(count/1000).toFixed(1)}K`;},9500);
