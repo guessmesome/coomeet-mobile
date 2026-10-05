@@ -13,14 +13,6 @@
 </head>
 <body>
   <main class="phone" aria-label="Coomeet introduction">
-    <div class="status-bar" aria-hidden="true">
-      <span>9:41</span>
-      <span class="status-icons">
-        <svg viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx=".6"/><rect x="4.5" y="5" width="3" height="7" rx=".6"/><rect x="9" y="2.5" width="3" height="9.5" rx=".6"/><rect x="13.5" y="0" width="3" height="12" rx=".6"/></svg>
-        <svg viewBox="0 0 16 12"><path d="M1 8.2A8.5 8.5 0 0 1 15 8.2M4.2 10a5 5 0 0 1 7.6 0"/><circle cx="8" cy="11.2" r="1.1"/></svg>
-        <svg class="battery" viewBox="0 0 25 12"><rect x=".7" y=".7" width="20" height="10.6" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.4" y="2.4" width="16.6" height="7.2" rx="1.2"/><rect x="21.6" y="3.6" width="2.2" height="4.8" rx=".8"/></svg>
-      </span>
-    </div>
     <header class="header">
       <button class="icon-button back" id="back" aria-label="Previous screen" hidden></button>
       <a class="brand" href="#1" aria-label="Coomeet home">
@@ -32,7 +24,6 @@
     <nav class="progress" aria-label="Your progress" hidden></nav>
     <section id="screen" class="screen" aria-live="polite"></section>
     <footer id="footer" class="footer"></footer>
-    <div class="home-indicator" aria-hidden="true"></div>
   </main>
   <dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-content"><button id="close-dialog" class="icon-button close-dialog" aria-label="Close"></button><div id="dialog-body"></div></div></dialog>
   <div id="announcement" class="sr-only" role="status"></div>

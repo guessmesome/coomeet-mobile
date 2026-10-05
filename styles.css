@@ -42,26 +42,11 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
   overflow: hidden;
   background: var(--bg);
 }
-.status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 22px 0;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -.02em;
-  flex-shrink: 0;
-  z-index: 5;
-}
-.status-icons { display: flex; align-items: center; gap: 6px; }
-.status-icons svg { width: 17px; height: 12px; fill: currentColor; stroke: none; }
-.status-icons .battery { width: 25px; height: 12px; fill: currentColor; }
-
 .header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px 6px;
+  padding: calc(14px + env(safe-area-inset-top)) 18px 6px;
   z-index: 4;
   flex-shrink: 0;
 }
@@ -110,15 +95,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 .screen { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; padding: 0 20px; }
 .intro { margin-bottom: 16px; }
 .intro p { margin-top: 8px; color: var(--muted); font-size: .95rem; line-height: 1.4; text-align: center; }
-.footer { padding: 12px 20px 8px; z-index: 3; flex-shrink: 0; }
-.home-indicator {
-  width: 120px;
-  height: 5px;
-  border-radius: 10px;
-  background: #111;
-  margin: 6px auto 10px;
-  flex-shrink: 0;
-}
+.footer { padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); z-index: 3; flex-shrink: 0; }
 
 .cta {
   display: flex;
@@ -158,7 +135,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 .step-note { text-align: center; font-size: .75rem; color: var(--muted); margin-top: 10px; }
 .step-note b { color: var(--ink); font-weight: 600; }
 
-.phone.hook .header, .phone.hook .status-bar { color: #17181d; background: transparent; }
+.phone.hook .header { color: #17181d; background: transparent; }
 .phone.hook .screen { padding: 0; justify-content: flex-end; position: static; }
 .hero-media { position: absolute; z-index: 0; inset: 0 0 108px; overflow: hidden; }
 .hero-media video { object-position: 50% 18%; }
@@ -443,11 +420,10 @@ dialog::backdrop { background: #17234683; }
 @media (min-width: 600px) {
   body { min-height: 100vh; padding: 24px; display: flex; align-items: center; justify-content: center; }
   .phone {
-    min-height: 844px;
-    max-height: 844px;
-    border-radius: 42px;
+    min-height: 764px;
+    max-height: none;
+    border-radius: 32px;
     box-shadow: 0 30px 80px #1a2c4d28;
-    border: 10px solid #1b1b1f;
   }
 }
 @media (prefers-reduced-motion: reduce) {
