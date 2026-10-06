@@ -1,0 +1,7 @@
+{
+  "name": "coomeet-mobile",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  }
+}
