@@ -1,27 +1,10 @@
 'use strict';
 
-const { createHash, timingSafeEqual } = require('node:crypto');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { AnalyticsError, parseRange, fetchDashboard } = require('../server/analytics-data');
-
-function digest(value) {
-  return createHash('sha256').update(value, 'utf8').digest();
-}
-
-function authenticated(header, username, password) {
-  if (typeof header !== 'string' || header.length > 8192 || !/^Basic [A-Za-z0-9+/]+={0,2}$/i.test(header)) return false;
-  const encoded = header.slice(6);
-  const bytes = Buffer.from(encoded, 'base64');
-  if (bytes.toString('base64') !== encoded) return false;
-  const credentials = bytes.toString('utf8');
-  if (!Buffer.from(credentials, 'utf8').equals(bytes)) return false;
-  const split = credentials.indexOf(':');
-  if (split < 0) return false;
-  const usernameMatches = timingSafeEqual(digest(credentials.slice(0, split)), digest(username));
-  const passwordMatches = timingSafeEqual(digest(credentials.slice(split + 1)), digest(password));
-  return Boolean(usernameMatches & passwordMatches);
-}
+const { LoginError, credentialsMatch, createSession, validSession, sessionCookie, sameOriginPost, readLogin } = require('../server/analytics-auth');
 
 function secureHeaders(res) {
   res.setHeader('Cache-Control', 'private, no-store, max-age=0');
@@ -29,7 +12,7 @@ function secureHeaders(res) {
   res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  res.setHeader('Vary', 'Authorization');
+  res.setHeader('Vary', 'Cookie');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -53,20 +36,66 @@ function dashboardCsp(html) {
   ].join('; ');
 }
 
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+}
+
+async function sendHtml(res, file, status = 200, error = '') {
+  // Vercel includes server/** relative to the function's project root.
+  let html = await fs.readFile(path.join(process.cwd(), 'server', file), 'utf8');
+  if (file === 'analytics-login.html') {
+    html = html.replace('{{LOGIN_ERROR}}', escapeHtml(error)).replace('{{ERROR_HIDDEN}}', error ? '' : 'hidden');
+  }
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Content-Security-Policy', dashboardCsp(html));
+  res.end(html);
+}
+
+function redirectToAnalytics(res) {
+  res.statusCode = 303;
+  res.setHeader('Location', '/analytics');
+  res.end();
+}
+
 module.exports = async function analytics(req, res) {
   secureHeaders(res);
   const password = process.env.ANALYTICS_PASSWORD;
   if (!password) return sendError(res, 503, 'ANALYTICS_NOT_CONFIGURED', 'Доступ к аналитике закрыт: настройте серверную переменную ANALYTICS_PASSWORD в Vercel.');
-  if (!authenticated(req.headers?.authorization, process.env.ANALYTICS_USERNAME || 'admin', password)) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Coomeet Analytics", charset="UTF-8"');
-    return sendError(res, 401, 'UNAUTHORIZED', 'Введите логин и пароль для доступа к аналитике.');
-  }
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Поддерживается только метод GET.');
-  }
+  const settings = { username: process.env.ANALYTICS_USERNAME || 'admin', password };
   try {
     const url = new URL(req.url, 'https://analytics.internal');
+    if (req.method === 'POST') {
+      const action = url.searchParams.get('action');
+      if (url.searchParams.getAll('action').length !== 1 || [...url.searchParams.keys()].some(key => key !== 'action') || !['login', 'logout'].includes(action)) {
+        return sendError(res, 400, 'INVALID_ACTION', 'Неизвестное действие.');
+      }
+      if (!sameOriginPost(req)) return sendError(res, 403, 'INVALID_ORIGIN', 'Откройте форму входа на этом сайте.');
+      if (action === 'logout') {
+        res.setHeader('Set-Cookie', sessionCookie('', true));
+        return redirectToAnalytics(res);
+      }
+      try {
+        const credentials = await readLogin(req);
+        if (!credentialsMatch(credentials.username, credentials.password, settings)) {
+          res.setHeader('Set-Cookie', sessionCookie('', true));
+          return await sendHtml(res, 'analytics-login.html', 401, 'Неверный логин или пароль. Попробуйте ещё раз.');
+        }
+      } catch (error) {
+        if (error instanceof LoginError) return await sendHtml(res, 'analytics-login.html', error.status, error.message);
+        throw error;
+      }
+      res.setHeader('Set-Cookie', sessionCookie(createSession(settings)));
+      return redirectToAnalytics(res);
+    }
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', 'GET, POST');
+      return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Поддерживаются GET и отправка формы POST.');
+    }
+    if (!validSession(req.headers?.cookie, settings)) {
+      if (url.searchParams.has('data')) return sendError(res, 401, 'UNAUTHORIZED', 'Войдите в аналитику, чтобы открыть данные.');
+      return await sendHtml(res, 'analytics-login.html');
+    }
     if (url.searchParams.has('data')) {
       const range = parseRange(url.searchParams);
       const data = await fetchDashboard(range);
@@ -74,12 +103,7 @@ module.exports = async function analytics(req, res) {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       return res.end(JSON.stringify(data));
     }
-    // Vercel includes server/** relative to the function's project root.
-    const html = await fs.readFile(path.join(process.cwd(), 'server', 'analytics-dashboard.html'), 'utf8');
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Security-Policy', dashboardCsp(html));
-    res.end(html);
+    return await sendHtml(res, 'analytics-dashboard.html');
   } catch (error) {
     if (error instanceof AnalyticsError) return sendError(res, error.status, error.code, error.message);
     return sendError(res, 500, 'ANALYTICS_ERROR', 'Не удалось открыть аналитику. Проверьте настройки deployment.');
