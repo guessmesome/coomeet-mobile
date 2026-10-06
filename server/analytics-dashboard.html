@@ -90,6 +90,7 @@
     .share-fill.cyan { background: #85d1ee; }
     .share-value { min-width: 39px; color: #727b91; font-size: 12px; text-align: right; }
     .country-table { min-width: 430px; }
+    .funnel-table { min-width: 440px; }
     .country-code { margin-left: 8px; color: #929aab; font-size: 11px; }
     .empty-notice { margin-bottom: 20px; padding: 18px 22px; border: 1px dashed #cad3eb; border-radius: 14px; background: #f7f8ff; }
     .empty-notice strong { font-size: 13px; font-weight: 600; color: #4b5773; }
@@ -151,6 +152,12 @@
 
       <div class="empty-notice" id="empty" hidden><strong>За этот период пока нет событий</strong><p>Попробуйте другой период, страну или версию сайта. Новые посещения появятся после обработки данных.</p></div>
       <div class="warning" id="warnings" role="status" hidden></div>
+
+      <section class="panel" aria-labelledby="funnel-title">
+        <div class="panel-heading"><div><h2 id="funnel-title">Почта и переходы</h2><p class="panel-description">От заполненного адреса до перехода по ссылке</p></div><span class="small-label" id="funnel-conversion">Доля переходов: —</span></div>
+        <div class="table-scroll"><table class="funnel-table"><thead><tr><th scope="col">Действие</th><th scope="col" class="number">События</th><th scope="col" class="number">Посетители</th></tr></thead><tbody id="funnel-body"><tr><td class="table-empty" colspan="3">Загружаем данные…</td></tr></tbody></table></div>
+        <p class="table-footnote">Ввод почты учитывается один раз за посещение, когда заполнен корректный адрес. Отправки и переходы учитываются отдельно, включая повторные попытки. Доля переходов — переходы / отправки. Сам email не записывается в аналитику.</p>
+      </section>
 
       <section class="panel" aria-labelledby="screens-title">
         <div class="panel-heading"><div><h2 id="screens-title">Экраны</h2><p class="panel-description">Просмотры, действия и время на каждом шаге</p></div><span class="small-label">01—05</span></div>
@@ -316,6 +323,20 @@
         });
       }
 
+      function renderFunnel(funnel) {
+        const body = byId('funnel-body');
+        body.replaceChildren();
+        for (const [key, name] of [['emailEntered', 'Ввели корректную почту'], ['emailSubmitted', 'Отправили форму с почтой'], ['outboundRedirects', 'Перешли по ссылке Supabase']]) {
+          const row = element('tr');
+          cell(row, name);
+          cell(row, integer.format(count(funnel[key].count)), 'number');
+          cell(row, integer.format(count(funnel[key].visitors)), 'number');
+          body.append(row);
+        }
+        const rate = nullableNumber(funnel.outboundRate);
+        text('funnel-conversion', `Доля переходов: ${rate === null ? '—' : percent.format(rate)}`);
+      }
+
       function renderDurations(rows, screens) {
         const body = byId('durations-body');
         body.replaceChildren();
@@ -343,6 +364,7 @@
       function render(data, requestedRange) {
         const arrays = ['screens', 'preferences', 'types', 'countries', 'durations'];
         if (!data || arrays.some(key => !Array.isArray(data[key]))) throw new Error('invalid_response');
+        if (!data.funnel || ['emailEntered', 'emailSubmitted', 'outboundRedirects'].some(key => !data.funnel[key])) throw new Error('invalid_response');
         data = { ...data };
         arrays.forEach(key => { data[key] = data[key].filter(value => value && typeof value === 'object'); });
         const screens = data.screens.filter(item => item && Number.isInteger(item.screen) && item.screen >= 1 && item.screen <= 5).sort((a, b) => a.screen - b.screen);
@@ -365,10 +387,11 @@
         renderChoices('preferences-body', data.preferences, preferenceOrder, false);
         renderChoices('types-body', data.types, typeOrder, true);
         renderCountries(data.countries);
+        renderFunnel(data.funnel);
         renderDurations(data.durations, screens);
         if (partial) byId('duration-details').open = true;
         updateCountryOptions(data.countries, byId('country').value);
-        const hasEvents = views > 0 || clicks > 0 || timeSegments > 0 || data.preferences.some(row => count(row.count) > 0 || count(row.confirmedCount) > 0) || data.types.some(row => count(row.count) > 0 || count(row.confirmedCount) > 0);
+        const hasEvents = views > 0 || clicks > 0 || timeSegments > 0 || data.preferences.some(row => count(row.count) > 0 || count(row.confirmedCount) > 0) || data.types.some(row => count(row.count) > 0 || count(row.confirmedCount) > 0) || ['emailEntered', 'emailSubmitted', 'outboundRedirects'].some(key => count(data.funnel[key].count) > 0);
         byId('empty').hidden = hasEvents;
         const warningMessages = Array.isArray(data.warnings) ? data.warnings.filter(value => typeof value === 'string' && value.trim()) : [];
         if (partial) warningMessages.unshift('Точное время за этот период недоступно полностью. Ниже показано распределение по диапазонам времени; просмотры и клики доступны в таблице экранов.');
@@ -414,7 +437,7 @@
         text('status', hasData ? 'Сохранены предыдущие данные' : 'Данные недоступны');
         if (!hasData) {
           text('applied-range', 'Данные ещё не загружены');
-          [['screens-body', 8], ['preferences-body', 4], ['types-body', 4], ['countries-body', 3], ['durations-body', 7]].forEach(([id, columns]) => blankBody(id, columns, 'Данные недоступны'));
+          [['screens-body', 8], ['preferences-body', 4], ['types-body', 4], ['countries-body', 3], ['durations-body', 7], ['funnel-body', 3]].forEach(([id, columns]) => blankBody(id, columns, 'Данные недоступны'));
         }
       }
 

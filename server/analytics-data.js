@@ -187,11 +187,25 @@ function assembleDashboard(range, results, now = new Date()) {
     };
   }).sort((left, right) => right.views - left.views);
   if (countries.some(row => row.country === 'Others')) warnings.push('География: показаны первые 100 стран; остальные объединены Vercel в Others.');
+  const funnel = {
+    emailEntered: { count: 0, visitors: 0 },
+    emailSubmitted: { count: 0, visitors: 0 },
+    outboundRedirects: { count: 0, visitors: 0 },
+    outboundRate: null
+  };
+  const stages = new Map([['email_entered', 'emailEntered'], ['email_submit', 'emailSubmitted'], ['outbound_redirect', 'outboundRedirects']]);
+  for (const row of results.funnel) {
+    const stage = stages.get(row.eventName);
+    if (!stage) { warnings.push('Почта и переходы: есть неизвестная группа событий.'); continue; }
+    funnel[stage].count = addSafe(funnel[stage].count, metric(row.count));
+    funnel[stage].visitors = addSafe(funnel[stage].visitors, metric(row.visitors));
+  }
+  funnel.outboundRate = funnel.emailSubmitted.count ? funnel.outboundRedirects.count / funnel.emailSubmitted.count : null;
   return {
     range, generatedAt: now.toISOString(), screens,
     preferences: selectionRows(results.preferences, results.preferencesConfirmed, ['Women', 'Men', 'Both'], warnings, 'Выбор партнёра'),
     types: selectionRows(results.types, results.typesConfirmed, ['Karolina', 'Hanna', 'Helen', 'Laura'], warnings, 'Выбор типажа'),
-    countries, durations, warnings: Array.from(new Set(warnings))
+    countries, durations, funnel, warnings: Array.from(new Set(warnings))
   };
 }
 
@@ -207,6 +221,7 @@ function jobsFor(range) {
     { key: 'types', dataset: 'events', by: ['eventData/value'], filter: `${filtered} and eventName eq 'type_select'` },
     { key: 'preferencesConfirmed', dataset: 'events', by: ['eventData/choice'], filter: `${filtered} and eventName eq 'cta_click' and eventData/screen eq '2'` },
     { key: 'typesConfirmed', dataset: 'events', by: ['eventData/choice'], filter: `${filtered} and eventName eq 'cta_click' and eventData/screen eq '4'` },
+    { key: 'funnel', dataset: 'events', by: ['eventName'], filter: `${filtered} and (eventName eq 'email_entered' or eventName eq 'email_submit' or eventName eq 'outbound_redirect')` },
     { key: 'buckets', dataset: 'events', by: ['eventName', 'eventData/duration_bucket'], filter: `${filtered} and (${[1, 2, 3, 4, 5].map(screen => `eventName eq 'screen_time_${screen}'`).join(' or ')})` }
   ];
   for (let screen = 1; screen <= 5; screen++) {

@@ -31,6 +31,7 @@
   const progress = document.querySelector('.progress');
   let signupPending = false;
   let signupAttempt = 0;
+  let emailEnteredTracked = false;
   let carouselTimer = null;
   let carouselFinishTimer = null;
   let carouselPosition = 5;
@@ -200,6 +201,11 @@
     next.setAttribute('aria-busy', String(signupPending));
     next.innerHTML = signupPending ? 'Connecting…' : `${ctaLabels[4]} ${arrow}`;
   }
+  function trackEmailEntered() {
+    if (emailEnteredTracked) return;
+    emailEnteredTracked = true;
+    analytics?.emailEntered?.();
+  }
   async function submitEmail(event) {
     event?.preventDefault();
     if (state.step !== 5 || signupPending) return;
@@ -211,6 +217,8 @@
       error.hidden = false;error.textContent = 'Please enter a valid email address.';input.setAttribute('aria-invalid','true');input.focus();syncCta();return {valid:false};
     }
     input.removeAttribute('aria-invalid');error.hidden = true;
+    trackEmailEntered();
+    analytics?.emailSubmitted?.();
     const form = input.form;
     const email = state.email;
     const attempt = ++signupAttempt;
@@ -229,6 +237,7 @@
       if (window.dispatchEvent(transition) && currentAttempt()) {
         analytics?.finish();
         location.assign(finalUrl);
+        analytics?.outboundRedirect?.();
         leavingPage = true;
       }
       return {valid:true,configured:true};
@@ -276,7 +285,13 @@
     }
     if (state.step === 5) {
       document.getElementById('email-form').addEventListener('submit',submitEmail);
-      document.getElementById('email').addEventListener('input', event => {state.email=event.target.value.trim();event.target.removeAttribute('aria-invalid');document.getElementById('email-error').hidden=true;syncCta();});
+      document.getElementById('email').addEventListener('input', event => {
+        state.email = event.target.value.trim();
+        if (validEmail(state.email) && event.target.validity.valid) trackEmailEntered();
+        event.target.removeAttribute('aria-invalid');
+        document.getElementById('email-error').hidden = true;
+        syncCta();
+      });
     }
   }
   window.addEventListener('hashchange',()=>{const step=Number(location.hash.slice(1));if(Number.isInteger(step)&&step>=1&&step<=5&&step!==state.step)go(step);});

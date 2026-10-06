@@ -62,6 +62,9 @@
   function type(id) {
     if (Object.hasOwn(types, id)) event('type_select', { value: types[id] });
   }
+  function emailEntered() { event('email_entered', { screen: 5 }); }
+  function emailSubmitted() { event('email_submit', { screen: 5 }); }
+  function outboundRedirect() { event('outbound_redirect', { screen: 5 }); }
   function finish() { endVisible(); suspended = true; }
   function resume() { suspended = false; beginVisible(); }
 
@@ -87,5 +90,5 @@
   window.addEventListener('pageshow', event => {
     if (event.persisted) { viewed = false; resume(); }
   });
-  window.COOMEET_ANALYTICS = { enter, cta, preference, type, finish, resume };
+  window.COOMEET_ANALYTICS = { enter, cta, preference, type, emailEntered, emailSubmitted, outboundRedirect, finish, resume };
 })();
