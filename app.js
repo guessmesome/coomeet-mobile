@@ -32,6 +32,9 @@
   const back = document.getElementById('back');
   const dialog = document.getElementById('dialog');
   let carouselTimer = null;
+  let carouselFinishTimer = null;
+  let carouselPosition = 5;
+  let carouselAnimating = false;
   let resizeFrame;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const portrait = person => `<span class="type-photo"><img src="${escape(config.photos?.[person.id] || person.image)}" alt="${person.name}" draggable="false"><span class="ring"></span></span>`;
@@ -50,6 +53,9 @@
   const validEmail = value => value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
   function render(focus = true) {
     clearInterval(carouselTimer);
+    clearTimeout(carouselFinishTimer);
+    cancelAnimationFrame(resizeFrame);
+    carouselAnimating = false;
     screen.querySelectorAll('video').forEach(video => video.pause());
     back.hidden = state.step === 1;
     phone.className = `phone ${state.step === 1 ? 'hook' : state.step === 5 ? 'final' : ''}`;
@@ -59,9 +65,10 @@
     if (state.step === 1) {
       screen.innerHTML = `<div class="hero-media">${media(people[2], 'hook')}</div><div class="bubbles" aria-label="Chat messages"><span class="bubble">Hey ;)</span><span class="bubble">Want to chat? 😘</span></div><div class="hero-content">${intro('Someone interesting might be<br><em>waiting for you</em>','See who’s online and where the conversation goes')}</div>`;
     } else if (state.step === 2) {
-      screen.innerHTML = intro('Who do you want<br><em>to meet?</em>','Choose who you’d like to see in your roulette') + `<div class="options" role="radiogroup" aria-label="Who do you want to meet">${[['Women','women','assets/figma/women.webp'],['Men','men','assets/figma/men.webp'],['Both','both','assets/figma/both.webp']].map(([name,icon,image]) => `<button class="choice ${state.preference === name ? 'selected' : ''}" role="radio" aria-checked="${state.preference === name}" tabindex="${state.preference === name ? '0' : '-1'}" data-preference="${name}"><span class="choice-photo"><img src="${image}" alt="" draggable="false"></span><span class="ring"></span><span class="choice-label">${svg(icon)}${name}</span>${radio}</button>`).join('')}</div>`;
+      screen.innerHTML = intro('Who do you want<br><em>to meet?</em>','Choose who you’d like to see in your roulette') + `<div class="options" role="radiogroup" aria-label="Who do you want to meet">${[['Women','women','assets/choices/women.webp'],['Men','men','assets/choices/men.webp'],['Both','both','assets/choices/both.webp']].map(([name,icon,image]) => `<button class="choice ${state.preference === name ? 'selected' : ''}" role="radio" aria-checked="${state.preference === name}" tabindex="${state.preference === name ? '0' : '-1'}" data-preference="${name}"><span class="choice-photo"><img src="${image}" alt="" draggable="false"></span><span class="ring"></span><span class="choice-label">${svg(icon)}${name}</span>${radio}</button>`).join('')}</div>`;
     } else if (state.step === 3) {
-      screen.innerHTML = intro('You never know<br><em>who’s next</em>','Every next chat is a surprise') + `<div class="carousel" role="region" aria-roledescription="carousel" aria-label="People to meet" tabindex="0"><div class="carousel-track">${people.slice(0,3).map((person,i) => `<article class="video-card ${state.carousel === i ? 'active' : ''}" aria-label="${person.name}, ${i+1} of 3">${media(person)}<span class="ring"></span><span class="live"><i></i>LIVE</span><span class="card-chat">${svg('chat')}</span><div class="card-person"><strong>${person.name}</strong><p><i class="online-dot"></i>Online now</p></div></article>`).join('')}</div></div>`;
+      const carouselPeople = [...people.slice(0,3), ...people.slice(0,3), ...people.slice(0,3)];
+      screen.innerHTML = intro('You never know<br><em>who’s next</em>','Every next chat is a surprise') + `<div class="carousel" role="region" aria-roledescription="carousel" aria-label="People to meet" tabindex="0"><div class="carousel-track">${carouselPeople.map((person,i) => `<article class="video-card ${i === state.carousel+3 ? 'active' : ''}" aria-hidden="${i !== state.carousel+3}" aria-label="${person.name}, ${i%3+1} of 3">${media(person)}<span class="ring"></span><span class="live"><i></i>LIVE</span><span class="card-chat">${svg('chat')}</span><div class="card-person"><strong>${person.name}</strong><p><i class="online-dot"></i>Online now</p></div></article>`).join('')}</div></div>`;
     } else if (state.step === 4) {
       screen.innerHTML = intro('Which one is more<br><em>your type?</em>','Pick the one you’d want to meet') + `<div class="type-grid" role="radiogroup" aria-label="Choose your type">${people.map(person => `<button class="type ${state.person === person.id ? 'selected' : ''}" role="radio" aria-checked="${state.person === person.id}" tabindex="${state.person === person.id ? '0' : '-1'}" data-person="${person.id}">${portrait(person)}<span class="type-name">${person.name}</span></button>`).join('')}</div>`;
     } else {
@@ -109,7 +116,12 @@
   }
   function resetAuto() {
     clearInterval(carouselTimer);
-    if (state.step === 3 && !document.hidden && !reducedMotion.matches) carouselTimer = setInterval(() => changeSlide(1),4000);
+    const carousel = screen.querySelector('.carousel');
+    if (state.step === 3 && carousel && !document.hidden && !reducedMotion.matches) {
+      carouselTimer = setInterval(() => {
+        if (state.step === 3 && screen.querySelector('.carousel') === carousel && !document.hidden && !reducedMotion.matches) changeSlide(-1);
+      },4000);
+    }
   }
   function syncVideos() {
     screen.querySelectorAll('video').forEach(video => {
@@ -123,16 +135,52 @@
       }
     });
   }
-  function slideTo(index, announce = false) {
-    state.carousel = ((index%3)+3)%3;
-    const container = screen.querySelector('.carousel');
-    if (!container) return;
+  function placeCarousel(container, position, instant = false) {
+    const track = container.querySelector('.carousel-track');
     const cards = [...container.querySelectorAll('.video-card')];
-    const width = cards[0].getBoundingClientRect().width / (cards[0].classList.contains('active') ? 1 : .96);
+    const width = parseFloat(getComputedStyle(cards[0]).width);
     const left = (container.clientWidth-width)/2;
-    container.querySelector('.carousel-track').style.transform = `translateX(${left-state.carousel*(width+12)}px)`;
-    cards.forEach((card,i) => {card.classList.toggle('active',i === state.carousel);card.setAttribute('aria-hidden',String(i !== state.carousel));});
+    if (instant) {
+      container.classList.add('is-rebasing');
+      track.style.transition = 'none';
+    }
+    track.style.transform = `translateX(${left-position*(width+12)}px)`;
+    cards.forEach((card,i) => {card.classList.toggle('active',i === position);card.setAttribute('aria-hidden',String(i !== position));});
     syncVideos();
+    if (instant) {
+      track.getBoundingClientRect();
+      container.classList.remove('is-rebasing');
+      track.style.removeProperty('transition');
+    }
+  }
+  function finishSlide(container) {
+    if (state.step !== 3 || screen.querySelector('.carousel') !== container) return;
+    clearTimeout(carouselFinishTimer);
+    carouselAnimating = false;
+    const position = state.carousel+3;
+    if (carouselPosition !== position) {
+      const cards = [...container.querySelectorAll('.video-card')];
+      const activeMedia = cards[carouselPosition].querySelector('.preview-media');
+      const replacementMedia = cards[position].querySelector('.preview-media');
+      // Keep the playing media when returning from a repeated card to its middle copy.
+      if (activeMedia && replacementMedia) {
+        replacementMedia.replaceWith(activeMedia);
+        cards[carouselPosition].prepend(replacementMedia);
+      }
+      carouselPosition = position;
+      placeCarousel(container,position,true);
+    }
+  }
+  function slideTo(index, announce = false, animate = true) {
+    const container = screen.querySelector('.carousel');
+    if (state.step !== 3 || !container || carouselAnimating) return;
+    const next = ((index%3)+3)%3;
+    animate = animate && !reducedMotion.matches;
+    carouselPosition = animate ? carouselPosition+index-state.carousel : next+3;
+    state.carousel = next;
+    carouselAnimating = animate;
+    placeCarousel(container,carouselPosition,!animate);
+    if (animate) carouselFinishTimer = setTimeout(() => finishSlide(container),650);
     if (announce) document.getElementById('announcement').textContent = `${people[state.carousel].name}, ${state.carousel+1} of 3`;
   }
   function changeSlide(delta, manual = false) {slideTo(state.carousel+delta,manual);if(manual)resetAuto();}
@@ -182,15 +230,15 @@
     if (state.step === 3) {
       const carousel = screen.querySelector('.carousel');
       const track = carousel.querySelector('.carousel-track');
-      track.style.transition = 'none';
-      slideTo(state.carousel);
-      track.getBoundingClientRect();
-      track.style.removeProperty('transition');
+      slideTo(state.carousel,false,false);
+      track.addEventListener('transitionend', event => {
+        if (event.target === track && event.propertyName === 'transform') finishSlide(carousel);
+      });
       let startX = 0, startY = 0;
       carousel.addEventListener('pointerdown', event => {startX=event.clientX;startY=event.clientY;clearInterval(carouselTimer);carousel.setPointerCapture(event.pointerId);});
-      carousel.addEventListener('pointerup', event => {const dx=event.clientX-startX,dy=event.clientY-startY;if(Math.abs(dx)>35 && Math.abs(dx)>Math.abs(dy))changeSlide(dx<0?1:-1,true);resetAuto();});
-      carousel.addEventListener('pointercancel',resetAuto);
-      carousel.addEventListener('keydown', event => {if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();changeSlide(event.key === 'ArrowLeft' ? -1 : 1,true);}});
+      carousel.addEventListener('pointerup', event => {if(state.step !== 3 || screen.querySelector('.carousel') !== carousel)return;const dx=event.clientX-startX,dy=event.clientY-startY;if(Math.abs(dx)>35 && Math.abs(dx)>Math.abs(dy))changeSlide(dx<0?1:-1,true);resetAuto();});
+      carousel.addEventListener('pointercancel',()=>{if(screen.querySelector('.carousel') === carousel)resetAuto();});
+      carousel.addEventListener('keydown', event => {if(screen.querySelector('.carousel') === carousel && ['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();changeSlide(event.key === 'ArrowLeft' ? -1 : 1,true);}});
       resetAuto();
     }
     if (state.step === 5) {
@@ -212,9 +260,18 @@
   document.getElementById('close-dialog').onclick=()=>dialog.close();
   dialog.addEventListener('click',event => {if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();}});
   window.addEventListener('hashchange',()=>{const step=Number(location.hash.slice(1));if(Number.isInteger(step)&&step>=1&&step<=5&&step!==state.step)go(step);});
-  window.addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>slideTo(state.carousel));});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(carouselTimer);else resetAuto();syncVideos();});
-  reducedMotion.addEventListener('change',resetAuto);
+  window.addEventListener('resize',()=>{
+    cancelAnimationFrame(resizeFrame);
+    const carousel = screen.querySelector('.carousel');
+    if (state.step !== 3 || !carousel) return;
+    resizeFrame = requestAnimationFrame(()=>{
+      if (state.step !== 3 || screen.querySelector('.carousel') !== carousel) return;
+      finishSlide(carousel);
+      slideTo(state.carousel,false,false);
+    });
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInterval(carouselTimer);const carousel=screen.querySelector('.carousel');if(carousel)finishSlide(carousel);}else resetAuto();syncVideos();});
+  reducedMotion.addEventListener('change',()=>{const carousel=screen.querySelector('.carousel');if(carousel)finishSlide(carousel);resetAuto();});
   let count=1200;
   setInterval(()=>{if(document.hidden||reducedMotion.matches)return;count=Math.max(1200,Math.min(1300,count+(Math.random()>.5?20:-10)));document.getElementById('online').textContent=`${(count/1000).toFixed(1)}K`;},9500);
   const initial=Number(location.hash.slice(1));if(Number.isInteger(initial)&&initial>=1&&initial<=5)state.step=initial;
