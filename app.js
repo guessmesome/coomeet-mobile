@@ -2,6 +2,7 @@
   'use strict';
   const config = window.COOMEET_CONFIG || { videos: {} };
   const redirect = window.COOMEET_REDIRECT;
+  const analytics = window.COOMEET_ANALYTICS;
   const icons = {
     next: '<path d="m9 5 7 7-7 7"/>',
     camera: '<rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/>',
@@ -75,11 +76,15 @@
     }
     const ready = state.step !== 5 || validEmail(state.email);
     footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${arrow}</button><div class="footer-notes"${state.step > 1 && state.step < 5 ? ' aria-hidden="true"' : ''}>${state.step === 1 || state.step === 5 ? trust(state.step === 5) : ''}</div>`;
-    if (state.step !== 5) document.getElementById('next').addEventListener('click', () => go(state.step+1));
+    if (state.step !== 5) document.getElementById('next').addEventListener('click', () => {
+      analytics?.cta(state.step, state.step === 2 ? state.preference : state.step === 4 ? state.person : undefined);
+      go(state.step+1);
+    });
     bindScreen();
     syncVideos();
     screen.scrollTop = 0;
     if (focus) screen.querySelector('h1')?.focus({preventScroll:true});
+    analytics?.enter(state.step);
   }
   function go(step) {
     if (!Number.isInteger(step) || step < 1 || step > 5) throw new Error('Screen must be between 1 and 5.');
@@ -94,6 +99,8 @@
   }
   function select(group, key, value) {
     state[key] = value;
+    if (key === 'preference') analytics?.preference(value);
+    if (key === 'person') analytics?.type(value);
     group.querySelectorAll('[role="radio"]').forEach(button => {
       const selected = button.dataset[key] === value;
       button.classList.toggle('selected', selected);
@@ -196,6 +203,7 @@
   async function submitEmail(event) {
     event?.preventDefault();
     if (state.step !== 5 || signupPending) return;
+    analytics?.cta(5);
     const input = document.getElementById('email');
     const error = document.getElementById('email-error');
     state.email = input.value.trim();
@@ -219,12 +227,14 @@
       const detail = {email,preference:state.preference,person:state.person,paywallUrl:finalUrl};
       const transition = new CustomEvent('coomeet:signup',{detail,cancelable:true});
       if (window.dispatchEvent(transition) && currentAttempt()) {
+        analytics?.finish();
         location.assign(finalUrl);
         leavingPage = true;
       }
       return {valid:true,configured:true};
     } catch {
       if (currentAttempt()) {
+        analytics?.resume();
         error.hidden = false;
         error.textContent = 'Connection failed. Please try again.';
       }
