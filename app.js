@@ -2,11 +2,10 @@
   'use strict';
   const config = window.COOMEET_CONFIG || { videos: {}, paywallUrl: '' };
   const icons = {
-    back: '<path d="m15 5-7 7 7 7"/>', next: '<path d="m9 5 7 7-7 7"/>',
+    next: '<path d="m9 5 7 7-7 7"/>',
     camera: '<rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/>',
     cameraOff: '<path d="M3 3l18 18M9 5h4a3 3 0 0 1 3 3v6m0-4 5-3v10l-3-2M3 8v8a3 3 0 0 0 3 3h7M3 5l13 14"/>',
     mic: '<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2m-7 9v3m-3 0h6"/>',
-    micOff: '<path d="m3 3 18 18M9 9v3a3 3 0 0 0 5 2m1-7V5a3 3 0 0 0-5.4-1.8M5 10v2a7 7 0 0 0 11 5.7M19 10v2m-7 7v3m-3 0h6"/>',
     chat: '<path d="M20 11.5a8 8 0 0 1-8 8H4l1.5-4a8 8 0 1 1 14.5-4Z"/>',
     users: '<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-17a3 3 0 0 1 0 6m1 5a5 5 0 0 1 3 4v2"/>',
     shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/>',
@@ -24,12 +23,11 @@
     { id: 'helen', name: 'Helen', image: config.posters?.helen || 'assets/helen.webp' },
     { id: 'laura', name: 'Laura', image: config.posters?.laura || 'assets/laura.webp' }
   ];
-  const state = { step: 1, preference: 'Women', person: 'karolina', carousel: 2, email: '', muted: false };
+  const state = { step: 1, preference: 'Women', person: 'karolina', carousel: 2, email: '' };
   const phone = document.querySelector('.phone');
   const screen = document.getElementById('screen');
   const footer = document.getElementById('footer');
   const progress = document.querySelector('.progress');
-  const back = document.getElementById('back');
   const dialog = document.getElementById('dialog');
   let carouselTimer = null;
   let carouselFinishTimer = null;
@@ -57,7 +55,6 @@
     cancelAnimationFrame(resizeFrame);
     carouselAnimating = false;
     screen.querySelectorAll('video').forEach(video => video.pause());
-    back.hidden = state.step === 1;
     phone.className = `phone ${state.step === 1 ? 'hook' : state.step === 5 ? 'final' : ''}`;
     screen.className = `screen ${state.step === 3 ? 'carousel-screen' : state.step === 4 ? 'type-screen' : state.step === 5 ? 'final-screen' : ''}`;
     progress.hidden = state.step === 1;
@@ -73,7 +70,7 @@
       screen.innerHTML = intro('Which one is more<br><em>your type?</em>','Pick the one you’d want to meet') + `<div class="type-grid" role="radiogroup" aria-label="Choose your type">${people.map(person => `<button class="type ${state.person === person.id ? 'selected' : ''}" role="radio" aria-checked="${state.person === person.id}" tabindex="${state.person === person.id ? '0' : '-1'}" data-person="${person.id}">${portrait(person)}<span class="type-name">${person.name}</span></button>`).join('')}</div>`;
     } else {
       const person = people.find(p => p.id === state.person);
-      screen.innerHTML = intro('She & <em>126 similar girls</em><br>are online right now') + `<div class="call">${media(person, 'final')}<span class="ring"></span><span class="live"><i></i>LIVE</span><div class="call-bubble">Hii, I’m already waiting for you. Are you joining? 😘</div><div class="call-controls"><button class="call-control" id="camera" aria-label="Camera preview information">${svg('cameraOff')}</button><button class="call-control" id="microphone" aria-label="${state.muted ? 'Unmute preview' : 'Mute preview'}" aria-pressed="${state.muted}">${svg(state.muted ? 'micOff' : 'mic')}</button><button class="call-control" id="chat" aria-label="Open chat preview">${svg('chat')}</button></div><div class="camera-preview">${svg('cameraOff')}<p>Your camera<br>is off</p></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail" autocomplete="email" inputmode="email" maxlength="254" value="${escape(state.email)}" aria-describedby="email-error" required></div><p id="email-error" class="error" role="alert" hidden></p><p class="legal">By continuing, you agree to our <button type="button" id="terms">Terms</button> and <button type="button" id="privacy">Privacy Policy</button>.</p></form>`;
+      screen.innerHTML = intro('She & <em>126 similar girls</em><br>are online right now') + `<div class="call">${media(person, 'final')}<span class="ring"></span><span class="live"><i></i>LIVE</span><div class="call-bubble">Hii, I’m already waiting for you. Are you joining? 😘</div><div class="call-controls"><button type="button" class="call-control" id="camera" aria-label="Camera" disabled>${svg('cameraOff')}</button><button type="button" class="call-control" id="microphone" aria-label="Microphone" disabled>${svg('mic')}</button><button type="button" class="call-control" id="chat" aria-label="Chat" disabled>${svg('chat')}</button></div><div class="camera-preview">${svg('cameraOff')}<p>Your camera<br>is off</p></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail" autocomplete="email" inputmode="email" maxlength="254" value="${escape(state.email)}" aria-describedby="email-error" required></div><p id="email-error" class="error" role="alert" hidden></p><p class="legal">By continuing, you agree to our <button type="button" id="terms" disabled>Terms</button> and <button type="button" id="privacy" disabled>Privacy Policy</button>.</p></form>`;
     }
     const ready = state.step !== 5 || validEmail(state.email);
     footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${arrow}</button><div class="footer-notes"${state.step > 1 && state.step < 5 ? ' aria-hidden="true"' : ''}>${state.step === 1 || state.step === 5 ? trust(state.step === 5) : ''}</div>`;
@@ -244,18 +241,8 @@
     if (state.step === 5) {
       document.getElementById('email-form').addEventListener('submit',submitEmail);
       document.getElementById('email').addEventListener('input', event => {state.email=event.target.value.trim();event.target.removeAttribute('aria-invalid');document.getElementById('email-error').hidden=true;syncCta();});
-      document.getElementById('microphone').onclick = event => {state.muted=!state.muted;const button=event.currentTarget;button.innerHTML=svg(state.muted?'micOff':'mic');button.setAttribute('aria-pressed',String(state.muted));button.setAttribute('aria-label',state.muted?'Unmute preview':'Mute preview');};
-      document.getElementById('camera').onclick = () => openDialog(`${svgSymbol('cameraOff')}<h2 id="dialog-title">Your camera stays off</h2><p>This is a video chat preview. Your camera and microphone are never accessed.</p>`);
-      document.getElementById('chat').onclick = () => {
-        openDialog(`${svgSymbol('chat')}<h2 id="dialog-title">Say hello</h2><p>Try a message in the preview. It won’t be sent.</p><form class="chat-compose" id="chat-form"><label class="sr-only" for="chat-input">Your message</label><input id="chat-input" placeholder="Your message" maxlength="280" required><button type="submit">Try</button></form><div id="chat-draft" hidden class="draft-message"></div>`);
-        document.getElementById('chat-form').onsubmit = event => {event.preventDefault();const value=document.getElementById('chat-input').value.trim();if(!value)return;const output=document.getElementById('chat-draft');output.hidden=false;output.textContent=value;};
-      };
-      document.getElementById('terms').onclick = () => openDialog(`${svgSymbol('shield')}<h2 id="dialog-title">Terms · Preview</h2><p>This prototype demonstrates a mobile interface. Profiles, messages and online counts are illustrative.</p>`);
-      document.getElementById('privacy').onclick = () => openDialog(`${svgSymbol('lock')}<h2 id="dialog-title">Privacy · Preview</h2><p>Your email and choices stay in this page’s memory. They are not sent to a server.</p>`);
     }
   }
-  back.innerHTML = svg('back');
-  back.onclick = () => go(state.step-1);
   document.getElementById('close-dialog').innerHTML=svg('close');
   document.getElementById('close-dialog').onclick=()=>dialog.close();
   dialog.addEventListener('click',event => {if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();}});
