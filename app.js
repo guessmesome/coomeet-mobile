@@ -1,6 +1,7 @@
 (() => {
   'use strict';
-  const config = window.COOMEET_CONFIG || { videos: {}, paywallUrl: '' };
+  const config = window.COOMEET_CONFIG || { videos: {} };
+  const redirect = window.COOMEET_REDIRECT;
   const icons = {
     next: '<path d="m9 5 7 7-7 7"/>',
     camera: '<rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/>',
@@ -10,7 +11,6 @@
     users: '<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-17a3 3 0 0 1 0 6m1 5a5 5 0 0 1 3 4v2"/>',
     shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/>',
     lock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-    check: '<path d="m5 12 4 4 10-10"/>', close: '<path d="m6 6 12 12M6 18 18 6"/>',
     women: '<circle cx="12" cy="8" r="5"/><path d="M12 13v9m-4-4h8"/>',
     men: '<circle cx="9" cy="15" r="5"/><path d="m12.5 11.5 7-7M14 4h6v6"/>',
     both: '<circle cx="8" cy="8" r="3.4"/><path d="M8 11.4v7.2m-3.2-3.2h6.4M15.2 16.2a3.6 3.6 0 1 1 .2-5.2l4.2-4.2M17.2 4h4.2v4.2"/>'
@@ -28,7 +28,8 @@
   const screen = document.getElementById('screen');
   const footer = document.getElementById('footer');
   const progress = document.querySelector('.progress');
-  const dialog = document.getElementById('dialog');
+  let signupPending = false;
+  let signupAttempt = 0;
   let carouselTimer = null;
   let carouselFinishTimer = null;
   let carouselPosition = 5;
@@ -83,6 +84,8 @@
   function go(step) {
     if (!Number.isInteger(step) || step < 1 || step > 5) throw new Error('Screen must be between 1 and 5.');
     if (state.step === 5) state.email = document.getElementById('email')?.value || state.email;
+    signupAttempt++;
+    signupPending = false;
     if (step === 3) state.carousel = 2;
     state.step = step;
     if (location.hash !== `#${step}`) location.hash = String(step);
@@ -184,12 +187,15 @@
   function syncCta() {
     const next = document.getElementById('next');
     if (!next || state.step !== 5) return;
-    const ok = validEmail(state.email);
+    const ok = validEmail(state.email) && !signupPending;
     next.disabled = !ok;
     next.classList.toggle('is-disabled', !ok);
+    next.setAttribute('aria-busy', String(signupPending));
+    next.innerHTML = signupPending ? 'Connecting…' : `${ctaLabels[4]} ${arrow}`;
   }
-  function submitEmail(event) {
+  async function submitEmail(event) {
     event?.preventDefault();
+    if (state.step !== 5 || signupPending) return;
     const input = document.getElementById('email');
     const error = document.getElementById('email-error');
     state.email = input.value.trim();
@@ -197,20 +203,40 @@
       error.hidden = false;error.textContent = 'Please enter a valid email address.';input.setAttribute('aria-invalid','true');input.focus();syncCta();return {valid:false};
     }
     input.removeAttribute('aria-invalid');error.hidden = true;
-    if (config.paywallUrl) {
-      const url = new URL(config.paywallUrl,location.href);
-      if (!['https:','http:'].includes(url.protocol)) throw new Error('Paywall URL must use HTTP or HTTPS.');
-      const detail = {email:state.email,preference:state.preference,person:state.person,paywallUrl:url.href};
+    const form = input.form;
+    const email = state.email;
+    const attempt = ++signupAttempt;
+    let leavingPage = false;
+    signupPending = true;
+    input.disabled = true;
+    form.setAttribute('aria-busy', 'true');
+    syncCta();
+    const currentAttempt = () => attempt === signupAttempt && state.step === 5 && Number(location.hash.slice(1)) === 5 && document.getElementById('email-form') === form;
+    try {
+      const offerUrl = await redirect.getOfferUrl();
+      if (!currentAttempt()) return;
+      const finalUrl = redirect.buildFinalUrl(offerUrl, email);
+      const detail = {email,preference:state.preference,person:state.person,paywallUrl:finalUrl};
       const transition = new CustomEvent('coomeet:signup',{detail,cancelable:true});
-      if (window.dispatchEvent(transition)) location.assign(url.href);
+      if (window.dispatchEvent(transition) && currentAttempt()) {
+        location.assign(finalUrl);
+        leavingPage = true;
+      }
       return {valid:true,configured:true};
+    } catch {
+      if (currentAttempt()) {
+        error.hidden = false;
+        error.textContent = 'Connection failed. Please try again.';
+      }
+    } finally {
+      if (attempt === signupAttempt && document.getElementById('email-form') === form && !leavingPage) {
+        signupPending = false;
+        input.disabled = false;
+        form.removeAttribute('aria-busy');
+        syncCta();
+      }
     }
-    openDialog(`${svgSymbol('check')}<h2 id="dialog-title">You’re ready to connect</h2><p>You’ve reached the end of the design preview.</p><p class="fine">The existing paywall hasn’t been connected. No account was created, no email was sent, and no payment will be taken.</p><button class="cta" id="restart">Back to the beginning ${arrow}</button>`);
-    document.getElementById('restart').onclick = () => {dialog.close();state.email='';go(1);};
-    return {valid:true,configured:false};
   }
-  function svgSymbol(icon) {return `<div class="dialog-symbol">${svg(icon)}</div>`;}
-  function openDialog(content) {document.getElementById('dialog-body').innerHTML = content;dialog.showModal();}
   function bindScreen() {
     screen.querySelectorAll('video').forEach(video => {
       video.addEventListener('error', () => {
@@ -243,9 +269,6 @@
       document.getElementById('email').addEventListener('input', event => {state.email=event.target.value.trim();event.target.removeAttribute('aria-invalid');document.getElementById('email-error').hidden=true;syncCta();});
     }
   }
-  document.getElementById('close-dialog').innerHTML=svg('close');
-  document.getElementById('close-dialog').onclick=()=>dialog.close();
-  dialog.addEventListener('click',event => {if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();}});
   window.addEventListener('hashchange',()=>{const step=Number(location.hash.slice(1));if(Number.isInteger(step)&&step>=1&&step<=5&&step!==state.step)go(step);});
   window.addEventListener('resize',()=>{
     cancelAnimationFrame(resizeFrame);
@@ -263,4 +286,5 @@
   setInterval(()=>{if(document.hidden||reducedMotion.matches)return;count=Math.max(1200,Math.min(1300,count+(Math.random()>.5?20:-10)));document.getElementById('online').textContent=`${(count/1000).toFixed(1)}K`;},9500);
   const initial=Number(location.hash.slice(1));if(Number.isInteger(initial)&&initial>=1&&initial<=5)state.step=initial;
   render(false);
+  redirect.getOfferUrl().catch(() => {});
 })();
