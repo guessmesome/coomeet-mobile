@@ -13,8 +13,7 @@
     shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/>',
     lock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
     women: '<circle cx="12" cy="8" r="5"/><path d="M12 13v9m-4-4h8"/>',
-    men: '<circle cx="9" cy="15" r="5"/><path d="m12.5 11.5 7-7M14 4h6v6"/>',
-    both: '<circle cx="8" cy="8" r="3.4"/><path d="M8 11.4v7.2m-3.2-3.2h6.4M15.2 16.2a3.6 3.6 0 1 1 .2-5.2l4.2-4.2M17.2 4h4.2v4.2"/>'
+    men: '<circle cx="9" cy="15" r="5"/><path d="m12.5 11.5 7-7M14 4h6v6"/>'
   };
   const svg = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.chat}</svg>`;
   const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -65,7 +64,7 @@
     if (state.step === 1) {
       screen.innerHTML = `<div class="hero-media">${media(people[2], 'hook')}</div><div class="bubbles" aria-label="Chat messages"><span class="bubble">Hey ;)</span><span class="bubble">Want to chat? 😘</span></div><div class="hero-content">${intro('Someone interesting might be<br><em>waiting for you</em>','See who’s online and where the conversation goes')}</div>`;
     } else if (state.step === 2) {
-      screen.innerHTML = intro('Who do you want<br><em>to meet?</em>','Choose who you’d like to see in your roulette') + `<div class="options" role="radiogroup" aria-label="Who do you want to meet">${[['Women','women','assets/choices/women.webp'],['Men','men','assets/choices/men.webp'],['Both','both','assets/choices/both.webp']].map(([name,icon,image]) => `<button class="choice ${state.preference === name ? 'selected' : ''}" role="radio" aria-checked="${state.preference === name}" tabindex="${state.preference === name ? '0' : '-1'}" data-preference="${name}"><span class="choice-photo"><img src="${image}" alt="" draggable="false"></span><span class="ring"></span><span class="choice-label">${svg(icon)}${name}</span>${radio}</button>`).join('')}</div>`;
+      screen.innerHTML = intro('Who do you want<br><em>to meet?</em>','Choose who you’d like to see in your roulette') + `<div class="options" role="radiogroup" aria-label="Who do you want to meet">${[['Women','women','assets/choices/women.webp'],['Men','men','assets/choices/men.webp']].map(([name,icon,image]) => `<button class="choice ${state.preference === name ? 'selected' : ''}" role="radio" aria-checked="${state.preference === name}" tabindex="${state.preference === name ? '0' : '-1'}" data-preference="${name}"><span class="choice-photo"><img src="${image}" alt="" draggable="false"></span><span class="ring"></span><span class="choice-label">${svg(icon)}${name}</span>${radio}</button>`).join('')}</div>`;
     } else if (state.step === 3) {
       const carouselPeople = [...people.slice(0,3), ...people.slice(0,3), ...people.slice(0,3)];
       screen.innerHTML = intro('You never know<br><em>who’s next</em>','Every next chat is a surprise') + `<div class="carousel" role="region" aria-roledescription="carousel" aria-label="People to meet" tabindex="0"><div class="carousel-track">${carouselPeople.map((person,i) => `<article class="video-card ${i === state.carousel+3 ? 'active' : ''}" aria-hidden="${i !== state.carousel+3}" aria-label="${person.name}, ${i%3+1} of 3">${media(person)}<span class="ring"></span><span class="live"><i></i>LIVE</span><span class="card-chat">${svg('chat')}</span><div class="card-person"><strong>${person.name}</strong><p><i class="online-dot"></i>Online now</p></div></article>`).join('')}</div></div>`;

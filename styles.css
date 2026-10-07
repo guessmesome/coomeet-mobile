@@ -180,14 +180,15 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 }
 .selected .ring, .video-card.active .ring, .call .ring { opacity: 1; }
 
-.options { display: flex; flex-direction: column; gap: 12px; }
+.options { display: flex; flex-direction: column; gap: 12px; flex: 1; padding-bottom: 12px; }
 .choice {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  height: clamp(128px, 41.0256vw, 160px);
-  flex-shrink: 0;
+  height: auto;
+  min-height: clamp(160px, 46.154vw, 180px);
+  flex: 1;
   border-radius: 22px;
   display: flex;
   align-items: flex-end;
@@ -217,7 +218,6 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 .choice-label svg { width: 40px; height: 40px; stroke-width: 1.7; }
 .choice[data-preference="Women"] .choice-label svg { color: var(--pink); }
 .choice[data-preference="Men"] .choice-label svg { color: #3b82f6; }
-.choice[data-preference="Both"] .choice-label svg { color: var(--pink); }
 .radio {
   position: absolute;
   right: 14px;

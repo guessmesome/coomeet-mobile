@@ -3,7 +3,7 @@
   const local = ['localhost', '127.0.0.1', '[::1]', '::1', '0.0.0.0'].includes(location.hostname) || location.hostname.endsWith('.localhost');
   const enabled = window.COOMEET_CONFIG?.analytics?.enabled !== false && ['https:', 'http:'].includes(location.protocol) && !local;
   const types = { karolina: 'Karolina', hanna: 'Hanna', helen: 'Helen', laura: 'Laura' };
-  const preferences = ['Women', 'Men', 'Both'];
+  const preferences = ['Women', 'Men'];
   let currentScreen = null;
   let visibleSince = null;
   let viewed = false;
