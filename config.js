@@ -8,7 +8,7 @@ window.COOMEET_CONFIG = {
   },
   videos: {
     hook: 'assets/videos/hero-video-1.mp4',
-    final: 'assets/videos/preview-0278.mp4',
+    final: 'assets/videos/preview-0800.mp4',
     karolina: 'assets/videos/preview-0316.mp4',
     hanna: 'assets/videos/preview-0276.mp4',
     helen: 'assets/videos/preview-0277.mp4',
@@ -16,7 +16,7 @@ window.COOMEET_CONFIG = {
   },
   posters: {
     hook: 'assets/videos/hero-video-1.webp',
-    final: 'assets/videos/preview-0278.webp',
+    final: 'assets/videos/preview-0800.webp',
     karolina: 'assets/videos/preview-0316.webp',
     hanna: 'assets/videos/preview-0276.webp',
     helen: 'assets/videos/preview-0277.webp',
