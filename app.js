@@ -279,6 +279,7 @@
         document.getElementById('offer-title').textContent = 'CooMeet Premium';
         document.getElementById('offer-caption').textContent = 'Explore private chats';
         document.querySelector('.offer-clock').hidden = true;
+        document.querySelector('.premium-offer').classList.add('is-expired');
         clearInterval(offerTimer);
       }
     };

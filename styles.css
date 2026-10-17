@@ -463,6 +463,24 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-lineca
 .offer-clock b { font-size: 16px; }
 .offer-digit { position: relative; width: 39px; height: 31px; display: grid; place-items: center; }
 .offer-digit img { position: absolute; inset: 0; width: 39px; height: 31px; z-index: -1; }
+/* Keep the offer readable while its outline and gift draw attention. */
+.premium-offer::after { content: ''; position: absolute; inset: 0; border: 1px solid #ff588780; border-radius: inherit; box-shadow: inset 0 0 14px #ff588738; opacity: 0; pointer-events: none; }
+.offer-gift { transform-origin: 50% 85%; }
+@media (prefers-reduced-motion: no-preference) {
+  .premium-offer:not(.is-expired)::after { animation: offer-glow 6s cubic-bezier(.45, 0, .55, 1) .6s infinite; }
+  .premium-offer:not(.is-expired) .offer-gift { animation: offer-gift-wiggle 6s cubic-bezier(.45, 0, .55, 1) .6s infinite; }
+}
+@keyframes offer-glow {
+  0%, 26%, 100% { opacity: 0; }
+  11% { opacity: 1; }
+}
+@keyframes offer-gift-wiggle {
+  0%, 24%, 100% { transform: translateY(0) rotate(0) scale(1); }
+  5% { transform: translateY(-2px) rotate(-8deg) scale(1.06); }
+  10% { transform: translateY(-2px) rotate(7deg) scale(1.06); }
+  15% { transform: translateY(-1px) rotate(-4deg) scale(1.03); }
+  20% { transform: translateY(0) rotate(2deg) scale(1); }
+}
 .phone.final .email-form { margin-top: 10px; margin-right: 2px; }
 .phone.final .input-wrap input { height: 64px; border: 1px solid #ff5887; background: transparent; font-size: 16px; font-weight: 500; color: #0d152d; }
 .phone.final .input-wrap input::placeholder { color: #0d152d80; }
