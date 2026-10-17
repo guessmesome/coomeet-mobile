@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="26" height="25.5309" viewBox="0 0 26 25.5309" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Gift icon">
+<path id="Vector" d="M22 10.5308H4C2.89543 10.5308 2 11.4262 2 12.5308V23.5308C2 24.6354 2.89543 25.5308 4 25.5308H22C23.1046 25.5308 24 24.6354 24 23.5308V12.5308C24 11.4262 23.1046 10.5308 22 10.5308Z" fill="url(#paint0_linear_0_49)"/>
+<path id="Vector_2" d="M24 4.53079H2C0.89543 4.53079 0 5.42622 0 6.53079V9.53079C0 10.6354 0.89543 11.5308 2 11.5308H24C25.1046 11.5308 26 10.6354 26 9.53079V6.53079C26 5.42622 25.1046 4.53079 24 4.53079Z" fill="#FF7AA8"/>
+<path id="Vector_3" d="M15.0001 4.53079H11.0001V25.5308H15.0001V4.53079Z" fill="#FFD6E6"/>
+<path id="Vector_4" d="M13 4.53083C8.00003 -2.46917 2.00003 -0.469171 5.00003 4.53083H13ZM13 4.53083C18 -2.46917 24 -0.469171 21 4.53083H13Z" fill="#F0136B"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_49" x1="2" y1="10.5308" x2="2" y2="25.5308" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FF7AA8"/>
+<stop offset="1" stop-color="#F0136B"/>
+</linearGradient>
+</defs>
+</svg>

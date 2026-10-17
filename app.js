@@ -31,6 +31,8 @@
   let signupPending = false;
   let signupAttempt = 0;
   let emailEnteredTracked = false;
+  let offerTimer = null;
+  let offerDeadline = null;
   let carouselTimer = null;
   let carouselFinishTimer = null;
   let carouselPosition = 5;
@@ -49,17 +51,20 @@
   const radio = '<span class="radio" aria-hidden="true"></span>';
   const arrow = svg('next');
   const trust = final => `<div class="trust">${(final ? [['lock','Private chat'],['shield','Secure connection'],['users','Data protected']] : [['camera','Live video chat'],['users','Real people'],['lock','Safe & private']]).map(([icon,text]) => `<span>${svg(icon)}${text}</span>`).join('')}</div>`;
-  const ctaLabels = ['Let’s go','Show me','Keep going','Show me more','Unlock 18+ chat'];
+  const ctaLabels = ['Let’s go','Show me','Keep going','Show me more','Let’s go private'];
   const validEmail = value => value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
   function render(focus = true) {
     clearInterval(carouselTimer);
+    clearInterval(offerTimer);
     clearTimeout(carouselFinishTimer);
     cancelAnimationFrame(resizeFrame);
     carouselAnimating = false;
     screen.querySelectorAll('video').forEach(video => video.pause());
     phone.className = `phone ${state.step === 1 ? 'hook' : state.step === 5 ? 'final' : ''}`;
     screen.className = `screen ${state.step === 3 ? 'carousel-screen' : state.step === 4 ? 'type-screen' : state.step === 5 ? 'final-screen' : ''}`;
-    progress.hidden = state.step === 1;
+    progress.hidden = state.step === 1 || state.step === 5;
+    const logo = document.querySelector('.brand-logo');
+    logo.src = state.step === 5 ? 'assets/final/logo.svg' : 'assets/figma/logo.svg';
     progress.innerHTML = [1,2,3,4].map(n => `<span class="${n < state.step ? 'active' : ''}"></span>`).join('');
     if (state.step === 1) {
       screen.innerHTML = `<div class="hero-media">${media(people[2], 'hook')}</div><div class="bubbles" aria-label="Chat messages"><span class="bubble">Hey ;)</span><span class="bubble">Want to chat? 😘</span></div><div class="hero-content">${intro('Someone interesting might be<br><em>waiting for you</em>','See who’s online and where the conversation goes')}</div>`;
@@ -72,16 +77,17 @@
       screen.innerHTML = intro('Which one is more<br><em>your type?</em>','Pick the one you’d want to meet') + `<div class="type-grid" role="radiogroup" aria-label="Choose your type">${people.map(person => `<button class="type ${state.person === person.id ? 'selected' : ''}" role="radio" aria-checked="${state.person === person.id}" tabindex="${state.person === person.id ? '0' : '-1'}" data-person="${person.id}">${portrait(person)}<span class="type-name">${person.name}</span></button>`).join('')}</div>`;
     } else {
       const person = people.find(p => p.id === state.person);
-      screen.innerHTML = intro('Get access to <em>private 18+ chat</em> and more live profiles') + `<div class="call">${media(person, 'final')}<span class="ring"></span><span class="live"><i></i>LIVE</span><div class="call-bubble">Want to see more? I’m waiting for you in private 😉</div><div class="call-controls"><button type="button" class="call-control" id="camera" aria-label="Camera" disabled>${svg('cameraOff')}</button><button type="button" class="call-control" id="microphone" aria-label="Microphone" disabled>${svg('mic')}</button><button type="button" class="call-control" id="chat" aria-label="Chat" disabled>${svg('chat')}</button></div><div class="camera-preview">${svg('cameraOff')}<p>Your camera<br>is off</p></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail to continue" autocomplete="email" inputmode="email" maxlength="254" value="${escape(state.email)}" aria-describedby="email-privacy email-error" required></div><p id="email-error" class="error" role="alert" hidden></p><p id="email-privacy" class="legal">Your email stays private and won’t be shared. No name or other personal details required.</p></form>`;
+      screen.innerHTML = `<div class="premium-media" aria-label="Video preview">${media(person, 'final')}</div><div class="premium-intro"><h1 tabindex="-1">The <em>fun</em> doesn’t<br>have to stop here</h1><p>Enjoy longer 18+ private video chats<br>with CooMeet Premium</p></div><div class="premium-features" aria-label="Premium features"><div class="premium-feature"><span class="feature-art feature-flame"><img src="assets/final/flame.png" alt=""></span><p>Extra 18+<br>Chat Minutes</p></div><img class="feature-divider" src="assets/final/divider.svg" width="1" height="38" alt=""><div class="premium-feature"><span class="feature-art feature-lips"><img src="assets/final/lips.png" alt=""></span><p>Verified<br>Hot Women</p></div><img class="feature-divider" src="assets/final/divider.svg" width="1" height="38" alt=""><div class="premium-feature"><span class="feature-art feature-hearts"><img src="assets/final/hearts.png" alt=""></span><p>Match Your<br>Preferences</p></div></div><div class="premium-offer"><img class="offer-background" src="assets/final/offer-bg.svg" width="351" height="50" alt=""><img class="offer-gift" src="assets/final/gift.svg" width="26" height="25.5309" alt=""><div class="offer-copy"><strong id="offer-title">50% OFF</strong><p id="offer-caption">Welcome offer ends in</p></div><div class="offer-clock" role="timer" aria-label="Welcome offer time remaining" aria-live="off"><span class="offer-digit"><img src="assets/final/timer-bg.svg" width="39" height="31" alt=""><span id="offer-minutes">15</span></span><b>:</b><span class="offer-digit"><img src="assets/final/timer-bg.svg" width="39" height="31" alt=""><span id="offer-seconds">00</span></span></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail to continue" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" enterkeyhint="go" maxlength="254" value="${escape(state.email)}" aria-describedby="email-privacy email-error" required></div><p id="email-error" class="error" role="alert" hidden></p></form>`;
     }
     const ready = state.step !== 5 || validEmail(state.email);
-    footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${arrow}</button><div class="footer-notes"${state.step > 1 && state.step < 5 ? ' aria-hidden="true"' : ''}>${state.step === 1 || state.step === 5 ? trust(state.step === 5) : ''}</div>`;
+    footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${state.step === 5 ? '<img class="premium-arrow" src="assets/final/arrow.svg" width="24" height="24" alt="">' : arrow}</button>${state.step === 5 ? '<p id="email-privacy" class="premium-privacy"><img src="assets/final/lock.svg" width="9.00002" height="12.6499" alt="">Your email stays private and won’t be shared.</p>' : `<div class="footer-notes"${state.step > 1 ? ' aria-hidden="true"' : ''}>${state.step === 1 ? trust(false) : ''}</div>`}`;
     if (state.step !== 5) document.getElementById('next').addEventListener('click', () => {
       analytics?.cta(state.step, state.step === 2 ? state.preference : state.step === 4 ? state.person : undefined);
       go(state.step+1);
     });
     bindScreen();
     syncVideos();
+    phone.scrollTop = 0;
     screen.scrollTop = 0;
     if (focus) screen.querySelector('h1')?.focus({preventScroll:true});
     analytics?.enter(state.step);
@@ -198,7 +204,7 @@
     next.disabled = !ok;
     next.classList.toggle('is-disabled', !ok);
     next.setAttribute('aria-busy', String(signupPending));
-    next.innerHTML = signupPending ? 'Connecting…' : `${ctaLabels[4]} ${arrow}`;
+    next.innerHTML = signupPending ? 'Connecting…' : `${ctaLabels[4]} <img class="premium-arrow" src="assets/final/arrow.svg" width="24" height="24" alt="">`;
   }
   function trackEmailEntered() {
     if (emailEnteredTracked) return;
@@ -255,6 +261,30 @@
       }
     }
   }
+  function startOfferTimer() {
+    const key = 'coomeet-premium-offer-until';
+    if (offerDeadline === null) {
+      try { offerDeadline = Number(sessionStorage.getItem(key)) || null; } catch {}
+      if (!Number.isFinite(offerDeadline) || offerDeadline === null) {
+        offerDeadline = Date.now() + 15 * 60 * 1000;
+        try { sessionStorage.setItem(key, String(offerDeadline)); } catch {}
+      }
+    }
+    const update = () => {
+      if (state.step !== 5) return;
+      const seconds = Math.max(0, Math.ceil((offerDeadline - Date.now()) / 1000));
+      document.getElementById('offer-minutes').textContent = String(Math.floor(seconds / 60)).padStart(2, '0');
+      document.getElementById('offer-seconds').textContent = String(seconds % 60).padStart(2, '0');
+      if (!seconds) {
+        document.getElementById('offer-title').textContent = 'CooMeet Premium';
+        document.getElementById('offer-caption').textContent = 'Explore private chats';
+        document.querySelector('.offer-clock').hidden = true;
+        clearInterval(offerTimer);
+      }
+    };
+    update();
+    if (offerDeadline > Date.now()) offerTimer = setInterval(update, 1000);
+  }
   function bindScreen() {
     screen.querySelectorAll('video').forEach(video => {
       video.addEventListener('error', () => {
@@ -283,6 +313,7 @@
       resetAuto();
     }
     if (state.step === 5) {
+      startOfferTimer();
       document.getElementById('email-form').addEventListener('submit',submitEmail);
       document.getElementById('email').addEventListener('input', event => {
         state.email = event.target.value.trim();
