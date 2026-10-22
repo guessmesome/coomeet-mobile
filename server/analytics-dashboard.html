@@ -50,7 +50,7 @@
     .report-meta strong { color: #535f7b; font-weight: 600; }
     .data-status { display: inline-flex; align-items: center; gap: 6px; }
     .status-dot { width: 6px; height: 6px; background: #39b7cd; border-radius: 50%; }
-    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
     .metric { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px 20px; min-height: 130px; }
     .metric-label { color: var(--muted); font-size: 12px; font-weight: 500; }
     .metric-value { display: block; margin-top: 8px; font-size: clamp(26px, 2.8vw, 34px); line-height: 1.15; font-weight: 700; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
@@ -144,9 +144,11 @@
         <span class="data-status" role="status" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span id="status">Загрузка данных</span></span>
       </div>
       <section class="metrics" aria-label="Общие показатели">
+        <article class="metric"><p class="metric-label">Посетители</p><strong class="metric-value" id="metric-visitors">—</strong><p class="metric-note">Уникальные на первом экране</p></article>
         <article class="metric"><p class="metric-label">Просмотры экранов</p><strong class="metric-value" id="metric-views">—</strong><p class="metric-note">Сумма по пяти экранам</p></article>
         <article class="metric"><p class="metric-label">Клики по кнопке</p><strong class="metric-value" id="metric-clicks">—</strong><p class="metric-note">Основная кнопка каждого экрана</p></article>
-        <article class="metric"><p class="metric-label">Доля кликов</p><strong class="metric-value accent" id="metric-ctr">—</strong><p class="metric-note">Клики / просмотры экранов</p></article>
+        <article class="metric"><p class="metric-label">Перешли на оффер</p><strong class="metric-value" id="metric-outbound">—</strong><p class="metric-note">После последнего экрана</p></article>
+        <article class="metric"><p class="metric-label">Доля перешедших</p><strong class="metric-value accent" id="metric-conversion">—</strong><p class="metric-note">Перешедшие / посетители первого экрана</p></article>
         <article class="metric"><p class="metric-label">Среднее видимое время</p><strong class="metric-value" id="metric-time">—</strong><p class="metric-note" id="metric-time-note">Только в активной вкладке</p></article>
       </section>
 
@@ -374,9 +376,13 @@
         const totalTime = screens.reduce((sum, screen) => sum + count(screen.totalVisibleMs), 0);
         const partial = screens.some(screen => screen.timePartial);
         const timeComplete = !partial && screens.filter(screen => count(screen.views) > 0).every(screen => nullableNumber(screen.totalVisibleMs) !== null);
+        const visitors = count(screens.find(screen => screen.screen === 1)?.visitors);
+        const outboundVisitors = count(data.funnel.outboundRedirects.visitors);
+        text('metric-visitors', integer.format(visitors));
         text('metric-views', integer.format(views));
         text('metric-clicks', integer.format(clicks));
-        text('metric-ctr', views ? percent.format(clicks / views) : '—');
+        text('metric-outbound', integer.format(outboundVisitors));
+        text('metric-conversion', visitors ? percent.format(outboundVisitors / visitors) : '—');
         text('metric-time', time(views > 0 && timeSegments > 0 && timeComplete ? totalTime / views : null));
         text('metric-time-note', partial ? 'Неполные данные о времени' : 'Только в активной вкладке');
         const range = { ...requestedRange, ...(data.range || {}) };
