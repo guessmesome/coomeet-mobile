@@ -79,7 +79,7 @@
       const person = people.find(p => p.id === state.person);
       screen.innerHTML = `<div class="premium-media" aria-label="Video preview">${media(person, 'final')}</div><div class="premium-intro"><h1 tabindex="-1">The <em>fun</em> doesn’t<br>have to stop here</h1><p>Enjoy longer 18+ private video chats<br>with CooMeet Premium</p></div><div class="premium-features" aria-label="Premium features"><div class="premium-feature"><span class="feature-art feature-flame"><img src="assets/final/flame.png" alt=""></span><p>Extra 18+<br>Chat Minutes</p></div><img class="feature-divider" src="assets/final/divider.svg" width="1" height="38" alt=""><div class="premium-feature"><span class="feature-art feature-lips"><img src="assets/final/lips.png" alt=""></span><p>Verified<br>Hot Women</p></div><img class="feature-divider" src="assets/final/divider.svg" width="1" height="38" alt=""><div class="premium-feature"><span class="feature-art feature-hearts"><img src="assets/final/hearts.png" alt=""></span><p>Match Your<br>Preferences</p></div></div><div class="premium-offer"><img class="offer-background" src="assets/final/offer-bg.svg" width="351" height="50" alt=""><img class="offer-gift" src="assets/final/gift.svg" width="26" height="25.5309" alt=""><div class="offer-copy"><strong id="offer-title">50% OFF</strong><p id="offer-caption">Welcome offer ends in</p></div><div class="offer-clock" role="timer" aria-label="Welcome offer time remaining" aria-live="off"><span class="offer-digit"><img src="assets/final/timer-bg.svg" width="39" height="31" alt=""><span id="offer-minutes">15</span></span><b>:</b><span class="offer-digit"><img src="assets/final/timer-bg.svg" width="39" height="31" alt=""><span id="offer-seconds">00</span></span></div></div><form class="email-form" id="email-form" novalidate><label class="sr-only" for="email">Your email</label><div class="input-wrap"><input id="email" name="email" type="email" placeholder="Enter your e-mail to continue" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" enterkeyhint="go" maxlength="254" value="${escape(state.email)}" aria-describedby="email-privacy email-error" required></div><p id="email-error" class="error" role="alert" hidden></p></form>`;
     }
-    const ready = state.step !== 5 || validEmail(state.email);
+    const ready = state.step !== 5 || (validEmail(state.email) && document.getElementById('email').validity.valid);
     footer.innerHTML = `<button class="cta${ready ? '' : ' is-disabled'}" id="next" ${state.step === 5 ? 'type="submit" form="email-form"' : ''} ${ready ? '' : 'disabled'}>${ctaLabels[state.step-1]} ${state.step === 5 ? '<img class="premium-arrow" src="assets/final/arrow.svg" width="24" height="24" alt="">' : arrow}</button>${state.step === 5 ? '<p id="email-privacy" class="premium-privacy"><img src="assets/final/lock.svg" width="9.00002" height="12.6499" alt="">Your email stays private and won’t be shared.</p>' : `<div class="footer-notes"${state.step > 1 ? ' aria-hidden="true"' : ''}>${state.step === 1 ? trust(false) : ''}</div>`}`;
     if (state.step !== 5) document.getElementById('next').addEventListener('click', () => {
       analytics?.cta(state.step, state.step === 2 ? state.preference : state.step === 4 ? state.person : undefined);
@@ -200,7 +200,8 @@
   function syncCta() {
     const next = document.getElementById('next');
     if (!next || state.step !== 5) return;
-    const ok = validEmail(state.email) && !signupPending;
+    const input = document.getElementById('email');
+    const ok = validEmail(input.value.trim()) && input.validity.valid && !signupPending;
     next.disabled = !ok;
     next.classList.toggle('is-disabled', !ok);
     next.setAttribute('aria-busy', String(signupPending));
@@ -214,13 +215,13 @@
   async function submitEmail(event) {
     event?.preventDefault();
     if (state.step !== 5 || signupPending) return;
-    analytics?.cta(5);
     const input = document.getElementById('email');
     const error = document.getElementById('email-error');
     state.email = input.value.trim();
     if (!validEmail(state.email) || !input.validity.valid) {
       error.hidden = false;error.textContent = 'Please enter a valid email address.';input.setAttribute('aria-invalid','true');input.focus();syncCta();return {valid:false};
     }
+    analytics?.cta(5);
     input.removeAttribute('aria-invalid');error.hidden = true;
     trackEmailEntered();
     analytics?.emailSubmitted?.();
@@ -316,13 +317,13 @@
     if (state.step === 5) {
       startOfferTimer();
       document.getElementById('email-form').addEventListener('submit',submitEmail);
-      document.getElementById('email').addEventListener('input', event => {
+      ['input', 'change', 'keyup'].forEach(type => document.getElementById('email').addEventListener(type, event => {
         state.email = event.target.value.trim();
         if (validEmail(state.email) && event.target.validity.valid) trackEmailEntered();
         event.target.removeAttribute('aria-invalid');
         document.getElementById('email-error').hidden = true;
         syncCta();
-      });
+      }));
     }
   }
   window.addEventListener('hashchange',()=>{const step=Number(location.hash.slice(1));if(Number.isInteger(step)&&step>=1&&step<=5&&step!==state.step)go(step);});
