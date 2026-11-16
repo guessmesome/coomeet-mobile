@@ -1,0 +1,6 @@
+{
+  "id": "coomeet-mobile",
+  "version": "1",
+  "screens": ["hook", "preference", "carousel", "type", "offer"],
+  "questions": ["preference", "type"]
+}

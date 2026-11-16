@@ -237,7 +237,10 @@
     try {
       const offerUrl = await redirect.getOfferUrl();
       if (!currentAttempt()) return;
-      const finalUrl = redirect.buildFinalUrl(offerUrl, email);
+      // The tracker keeps the id of this visit's session with its click (analytics.js, tagOffer), so the hub
+      // can join a registration or a purchase to the visit. Without analytics the link goes out as it is.
+      const offerLink = redirect.buildFinalUrl(offerUrl, email);
+      const finalUrl = analytics?.tagOffer ? analytics.tagOffer(offerLink) : offerLink;
       const detail = {email,preference:state.preference,person:state.person,paywallUrl:finalUrl};
       const transition = new CustomEvent('coomeet:signup',{detail,cancelable:true});
       if (window.dispatchEvent(transition) && currentAttempt()) {
@@ -249,7 +252,7 @@
       return {valid:true,configured:true};
     } catch {
       if (currentAttempt()) {
-        analytics?.resume();
+        if (analytics?.redirectError) analytics.redirectError(); else analytics?.resume();
         error.hidden = false;
         error.textContent = 'Connection failed. Please try again.';
       }
@@ -319,6 +322,7 @@
       document.getElementById('email-form').addEventListener('submit',submitEmail);
       ['input', 'change', 'keyup'].forEach(type => document.getElementById('email').addEventListener(type, event => {
         state.email = event.target.value.trim();
+        if (state.email) analytics?.emailStarted?.();
         if (validEmail(state.email) && event.target.validity.valid) trackEmailEntered();
         event.target.removeAttribute('aria-invalid');
         document.getElementById('email-error').hidden = true;
