@@ -68,9 +68,13 @@
       stream.track('leave', { sc: screenId(), ms: duration });
     }
   }
+  // The loading speed goes once, for a page that is on screen when its first screen opens. A page an app loads in the
+  // background before the ad is tapped (link preloading) sends nothing until someone sees it: otherwise it would land
+  // in the hub as a session without the first screen, and its loading time is not anybody's wait.
+  let readyChecked = false;
   function enter(screen) {
     if (!validScreen(screen)) return;
-    stream.ready();
+    if (!readyChecked) { readyChecked = true; if (!document.hidden) stream.ready(); }
     if (currentScreen !== screen) {
       endVisible();
       currentScreen = screen;
